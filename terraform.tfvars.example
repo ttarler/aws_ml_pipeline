@@ -1,0 +1,63 @@
+# Copy this file to terraform.tfvars and update with your values
+
+# General Configuration
+project_name = "govcloud-ml-platform"
+environment  = "dev"
+aws_region   = "us-gov-west-1"  # or us-gov-east-1
+aws_partition = "aws-us-gov"     # use "aws-us-gov" for GovCloud, "aws" for commercial
+
+# Networking Configuration
+vpc_cidr             = "10.0.0.0/16"
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+
+# SageMaker Configuration
+sagemaker_jupyter_instance_type         = "system"
+sagemaker_kernel_gateway_instance_type  = "ml.t3.medium"
+sagemaker_notebook_instance_type        = "ml.t3.medium"
+sagemaker_create_notebook_instance      = false  # Set to true for direct EMR access
+sagemaker_enable_feature_store          = false  # Set to true to enable Feature Store
+
+# EMR Configuration
+enable_emr                       = true
+emr_release_label                = "emr-6.15.0"
+emr_applications                 = ["Hadoop", "Spark", "Livy", "Hive", "JupyterHub", "JupyterEnterpriseGateway"]
+emr_create_bootstrap_script      = true
+emr_master_instance_type         = "m5.xlarge"
+emr_master_ebs_size              = 100
+emr_core_instance_type           = "m5.xlarge"
+emr_core_instance_count          = 2
+emr_core_ebs_size                = 100
+emr_core_use_spot                = false  # Set to true for spot instances on core nodes
+emr_core_spot_bid_price          = ""
+emr_enable_task_spot_instances   = true
+emr_task_instance_type           = "m5.xlarge"
+emr_task_instance_count          = 2
+emr_task_ebs_size                = 100
+emr_task_spot_bid_price          = "0.15"  # Adjust based on current pricing
+emr_task_min_capacity            = 1
+emr_task_max_capacity            = 10
+emr_enable_managed_scaling       = false
+emr_managed_scaling_min_capacity = 2
+emr_managed_scaling_max_capacity = 10
+emr_managed_scaling_max_ondemand = 2
+
+# ECS Configuration
+ecs_ecr_repositories       = ["ml-workload", "data-processing", "model-serving"]
+ecs_create_sample_task     = false  # Set to true to create sample task definition
+ecs_create_sample_service  = false  # Set to true to create sample service
+ecs_task_cpu               = "1024"
+ecs_task_memory            = "2048"
+ecs_service_desired_count  = 1
+ecs_enable_scheduled_tasks = false
+ecs_schedule_expression    = "rate(1 hour)"
+
+# GitLab Configuration
+gitlab_url = "https://gitlab.com"  # Update with your GitLab instance URL
+
+# Additional Tags
+tags = {
+  Owner       = "YourName"
+  Department  = "DataScience"
+  CostCenter  = "CC123456"
+  Compliance  = "FedRAMP"
+}

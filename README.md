@@ -1,0 +1,364 @@
+# AWS GovCloud ML Platform - Terraform Infrastructure
+
+This Terraform Infrastructure as Code (IaC) project deploys a comprehensive machine learning platform on AWS GovCloud with the following components:
+
+- **Amazon SageMaker** with Studio and domain configuration
+- **Amazon EMR** with spot instance support for distributed data processing
+- **Amazon ECS** for containerized workloads
+- **Private VPC** with no public internet access
+- **S3 Landing Zone** for data storage
+- **GitLab Integration** for Docker container management
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         AWS GovCloud VPC                         │
+│                       (Private Subnets Only)                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────────┐      ┌──────────────────┐                │
+│  │  SageMaker       │◄────►│  EMR Cluster     │                │
+│  │  Studio Domain   │      │  - Master Node   │                │
+│  │  - Notebooks     │      │  - Core Nodes    │                │
+│  │  - Model Registry│      │  - Spot Task     │                │
+│  └────────┬─────────┘      │    Nodes         │                │
+│           │                └────────┬─────────┘                │
+│           │                         │                            │
+│           │                         │                            │
+│  ┌────────▼────────────────────────▼──────┐                    │
+│  │         S3 Landing Zone                 │                    │
+│  │  - Raw Data                             │                    │
+│  │  - Processed Data                       │                    │
+│  │  - Model Artifacts                      │                    │
+│  └─────────────────────────────────────────┘                    │
+│                         │                                         │
+│           ┌─────────────▼───────────────┐                       │
+│           │  ECS Cluster (Fargate)      │                       │
+│           │  - ML Workloads             │                       │
+│           │  - Data Processing          │                       │
+│           │  - Model Serving            │                       │
+│           └─────────────────────────────┘                       │
+│                         │                                         │
+│  ┌──────────────────────▼─────────────────────────┐            │
+│  │  VPC Endpoints (Private AWS Service Access)     │            │
+│  │  - S3, SageMaker, EMR, ECS, ECR, CloudWatch     │            │
+│  └──────────────────────────────────────────────────┘            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Features
+
+### 1. Private Networking
+- VPC with private subnets only (no public internet access)
+- VPC endpoints for all AWS services (S3, SageMaker, EMR, ECS, ECR, CloudWatch, etc.)
+- Security groups configured for least privilege access
+- All inter-service communication through private networking
+
+### 2. Amazon SageMaker
+- SageMaker Domain and Studio setup
+- Pre-configured for EMR connectivity via Livy/SparkMagic
+- User profiles with appropriate IAM roles
+- Model Registry for versioning
+- Optional Feature Store for ML feature management
+- Optional Notebook instances for direct EMR access
+
+### 3. Amazon EMR
+- Base EMR cluster with configurable instance types
+- Support for spot instances on task nodes for cost optimization
+- Auto-scaling configuration for dynamic workload management
+- Pre-configured with Spark, Livy, Hive, and JupyterHub
+- Bootstrap scripts for SageMaker integration
+- S3 integration for data access in landing zone
+
+### 4. Amazon ECS
+- ECS Cluster with Fargate support
+- ECR repositories for Docker images
+- Sample task definitions and services
+- Integration with GitLab for CI/CD
+- Secrets Manager for credential management
+- Optional scheduled tasks for recurring workloads
+
+### 5. S3 Storage
+- Landing zone bucket for raw and processed data
+- SageMaker bucket for model artifacts
+- EMR logs bucket with lifecycle policies
+- ECS artifacts bucket for container configurations
+- Server-side encryption enabled on all buckets
+- Versioning enabled for data protection
+
+## Prerequisites
+
+- Terraform >= 1.5.0
+- AWS CLI configured with GovCloud credentials
+- Appropriate IAM permissions to create resources
+- AWS GovCloud account access
+
+## Deployment Instructions
+
+### 1. Clone or Initialize the Repository
+
+```bash
+cd aws-govcloud-ml-platform
+```
+
+### 2. Configure Variables
+
+Copy the example variables file and customize it:
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+Edit `terraform.tfvars` with your specific configuration:
+
+```hcl
+project_name = "my-ml-platform"
+environment  = "dev"
+aws_region   = "us-gov-west-1"
+
+# Update other variables as needed
+```
+
+### 3. Configure Backend (Optional but Recommended)
+
+For production deployments, configure remote state storage in `main.tf`:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "your-terraform-state-bucket"
+    key            = "govcloud-ml-platform/terraform.tfstate"
+    region         = "us-gov-west-1"
+    encrypt        = true
+    dynamodb_table = "terraform-state-lock"
+  }
+}
+```
+
+### 4. Initialize Terraform
+
+```bash
+terraform init
+```
+
+### 5. Review the Plan
+
+```bash
+terraform plan
+```
+
+Review the resources that will be created.
+
+### 6. Deploy the Infrastructure
+
+```bash
+terraform apply
+```
+
+Type `yes` when prompted to confirm the deployment.
+
+### 7. Capture Outputs
+
+After successful deployment, Terraform will display important outputs:
+
+```bash
+terraform output
+```
+
+Save these outputs for accessing your infrastructure.
+
+## Post-Deployment Configuration
+
+### 1. Update GitLab Credentials
+
+Update the GitLab credentials in AWS Secrets Manager:
+
+```bash
+aws secretsmanager update-secret \
+  --secret-id <gitlab-secret-arn> \
+  --secret-string '{"gitlab_url":"https://gitlab.com","gitlab_token":"YOUR_TOKEN","gitlab_project_id":"YOUR_PROJECT_ID"}' \
+  --region us-gov-west-1
+```
+
+### 2. Access SageMaker Studio
+
+1. Navigate to the SageMaker console in AWS GovCloud
+2. Open SageMaker Studio using the domain URL from outputs
+3. Create a new user profile or use the default profile
+4. Launch Studio
+
+### 3. Connect SageMaker to EMR
+
+The infrastructure includes lifecycle configurations for EMR connectivity. To use EMR from SageMaker:
+
+1. In SageMaker Studio, open a notebook
+2. The SparkMagic kernel should be available
+3. Connect to EMR using the master node DNS from outputs
+
+Example notebook cell:
+```python
+%%spark
+sc.version  # This will connect to EMR and show Spark version
+```
+
+### 4. Push Docker Images to ECR
+
+```bash
+# Get ECR login
+aws ecr get-login-password --region us-gov-west-1 | \
+  docker login --username AWS --password-stdin <ecr-url>
+
+# Build and tag your image
+docker build -t ml-workload .
+docker tag ml-workload:latest <ecr-url>/ml-workload:latest
+
+# Push to ECR
+docker push <ecr-url>/ml-workload:latest
+```
+
+### 5. Upload Data to Landing Zone
+
+```bash
+aws s3 cp local-data/ s3://<landing-zone-bucket>/raw/ --recursive
+```
+
+## Configuration Options
+
+### EMR Spot Instances
+
+The infrastructure supports spot instances for cost optimization:
+
+- **Task Nodes**: Configured for spot instances by default
+- **Core Nodes**: Can be configured for spot (set `emr_core_use_spot = true`)
+- **Auto-scaling**: Task nodes auto-scale based on YARN memory utilization
+
+### SageMaker Features
+
+Optional SageMaker features can be enabled:
+
+- **Feature Store**: Set `sagemaker_enable_feature_store = true`
+- **Notebook Instance**: Set `sagemaker_create_notebook_instance = true`
+
+### ECS Scheduled Tasks
+
+Enable scheduled ECS tasks for recurring workloads:
+
+```hcl
+ecs_enable_scheduled_tasks = true
+ecs_schedule_expression    = "rate(1 hour)"  # or cron expression
+```
+
+## Security Considerations
+
+### Network Security
+- All resources are deployed in private subnets
+- No internet gateway or NAT gateway
+- VPC endpoints for all AWS service access
+- Security groups follow least privilege principle
+
+### Data Security
+- All S3 buckets have encryption enabled
+- Public access blocked on all S3 buckets
+- Secrets stored in AWS Secrets Manager
+- IAM roles follow least privilege principle
+
+### Compliance
+- Designed for AWS GovCloud deployment
+- FedRAMP compliant architecture
+- Audit logging via CloudWatch
+
+## Cost Optimization
+
+### Spot Instances
+- EMR task nodes use spot instances by default
+- ECS can use Fargate Spot for additional savings
+- Configure `core_use_spot = true` for maximum savings
+
+### Auto-scaling
+- EMR auto-scaling reduces costs during low utilization
+- ECS services can scale to zero when not in use
+
+### Lifecycle Policies
+- EMR logs automatically expire after 90 days
+- ECR images are cleaned up automatically
+
+## Monitoring and Logging
+
+All services send logs to CloudWatch:
+- SageMaker: `/aws/sagemaker/*`
+- EMR: `/aws/emr/<project-name>`
+- ECS: `/aws/ecs/<project-name>`
+
+## Troubleshooting
+
+### EMR Connection Issues
+- Verify security groups allow traffic between SageMaker and EMR
+- Check EMR master node is running: `aws emr describe-cluster --cluster-id <cluster-id>`
+- Verify Livy is running on port 8998
+
+### SageMaker Domain Issues
+- Ensure VPC endpoints are created successfully
+- Check IAM roles have correct permissions
+- Verify subnets are in different AZs
+
+### ECS Task Failures
+- Check CloudWatch logs for error messages
+- Verify task execution role has ECR permissions
+- Ensure VPC endpoints for ECR are working
+
+## Cleanup
+
+To destroy all resources:
+
+```bash
+terraform destroy
+```
+
+⚠️ **Warning**: This will delete all resources including S3 buckets. Ensure you have backed up any important data.
+
+## Module Structure
+
+```
+aws-govcloud-ml-platform/
+├── main.tf                 # Root module
+├── variables.tf            # Root variables
+├── outputs.tf              # Root outputs
+├── terraform.tfvars.example # Example configuration
+├── README.md               # This file
+└── modules/
+    ├── networking/         # VPC, subnets, security groups, VPC endpoints
+    ├── iam/                # IAM roles and policies
+    ├── s3/                 # S3 buckets
+    ├── sagemaker/          # SageMaker domain and Studio
+    ├── emr/                # EMR cluster configuration
+    └── ecs/                # ECS cluster and services
+```
+
+## Contributing
+
+To extend this infrastructure:
+
+1. Add new modules in the `modules/` directory
+2. Update root `main.tf` to include new modules
+3. Add variables to `variables.tf`
+4. Document changes in this README
+
+## Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review AWS GovCloud documentation
+3. Check Terraform AWS provider documentation
+
+## License
+
+This project is provided as-is for use in AWS GovCloud environments.
+
+## References
+
+- [AWS GovCloud Documentation](https://docs.aws.amazon.com/govcloud-us/)
+- [SageMaker Developer Guide](https://docs.aws.amazon.com/sagemaker/)
+- [EMR Developer Guide](https://docs.aws.amazon.com/emr/)
+- [ECS Developer Guide](https://docs.aws.amazon.com/ecs/)
+- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
