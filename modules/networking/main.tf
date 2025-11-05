@@ -414,6 +414,14 @@ resource "aws_security_group" "emr_master" {
     description     = "SparkMagic from SageMaker"
   }
 
+  ingress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "HTTPS API access from VPC"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -459,6 +467,14 @@ resource "aws_security_group" "emr_slave" {
     description     = "All TCP from EMR master"
   }
 
+  ingress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "HTTPS API access from VPC"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -487,6 +503,14 @@ resource "aws_security_group" "emr_service" {
   name_prefix = "${var.project_name}-emr-service-sg"
   description = "Security group for EMR service access"
   vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "HTTPS API access from VPC"
+  }
 
   egress {
     from_port       = 8443

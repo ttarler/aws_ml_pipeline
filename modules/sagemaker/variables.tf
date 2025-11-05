@@ -39,22 +39,10 @@ variable "jupyter_instance_type" {
   default     = "system"
 }
 
-variable "jupyter_image_arn" {
-  description = "ARN of Jupyter Server image"
-  type        = string
-  default     = ""
-}
-
 variable "kernel_gateway_instance_type" {
   description = "Instance type for Kernel Gateway"
   type        = string
   default     = "ml.t3.medium"
-}
-
-variable "kernel_gateway_image_arn" {
-  description = "ARN of Kernel Gateway image"
-  type        = string
-  default     = ""
 }
 
 variable "notebook_instance_type" {

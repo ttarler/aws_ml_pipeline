@@ -11,20 +11,13 @@ resource "aws_sagemaker_domain" "main" {
 
     jupyter_server_app_settings {
       default_resource_spec {
-        instance_type       = var.jupyter_instance_type
-        sagemaker_image_arn = var.jupyter_image_arn
+        instance_type = var.jupyter_instance_type
       }
     }
 
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type       = var.kernel_gateway_instance_type
-        sagemaker_image_arn = var.kernel_gateway_image_arn
-      }
-
-      custom_image {
-        image_name         = "custom-ml-image"
-        app_image_config_name = aws_sagemaker_app_image_config.custom_ml.app_image_config_name
+        instance_type = var.kernel_gateway_instance_type
       }
     }
 
@@ -47,30 +40,6 @@ resource "aws_sagemaker_domain" "main" {
   )
 }
 
-# SageMaker App Image Config for custom images
-resource "aws_sagemaker_app_image_config" "custom_ml" {
-  app_image_config_name = "${var.project_name}-custom-ml-config"
-
-  kernel_gateway_image_config {
-    kernel_spec {
-      name = "python3"
-    }
-
-    file_system_config {
-      mount_path        = "/home/sagemaker-user"
-      default_uid       = 1000
-      default_gid       = 100
-    }
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-custom-ml-config"
-    }
-  )
-}
-
 # SageMaker User Profile
 resource "aws_sagemaker_user_profile" "default" {
   domain_id         = aws_sagemaker_domain.main.id
@@ -81,15 +50,13 @@ resource "aws_sagemaker_user_profile" "default" {
 
     jupyter_server_app_settings {
       default_resource_spec {
-        instance_type       = var.jupyter_instance_type
-        sagemaker_image_arn = var.jupyter_image_arn
+        instance_type = var.jupyter_instance_type
       }
     }
 
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type       = var.kernel_gateway_instance_type
-        sagemaker_image_arn = var.kernel_gateway_image_arn
+        instance_type = var.kernel_gateway_instance_type
       }
     }
   }
