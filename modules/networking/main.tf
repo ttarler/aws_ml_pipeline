@@ -49,7 +49,6 @@ resource "aws_route_table_association" "private" {
 
 # Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoints" {
-  name_description = "${var.project_name}-vpc-endpoints-sg"
   description      = "Security group for VPC endpoints"
   vpc_id           = aws_vpc.main.id
 
