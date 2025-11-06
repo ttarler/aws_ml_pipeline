@@ -28,11 +28,6 @@ output "cloudwatch_log_group_name" {
   value       = aws_cloudwatch_log_group.ecs.name
 }
 
-output "gitlab_credentials_secret_arn" {
-  description = "ARN of the GitLab credentials secret"
-  value       = aws_secretsmanager_secret.gitlab_credentials.arn
-}
-
 output "task_definition_arn" {
   description = "ARN of the sample task definition"
   value       = var.create_sample_task ? aws_ecs_task_definition.ml_workload[0].arn : null

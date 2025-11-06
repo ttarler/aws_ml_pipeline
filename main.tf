@@ -165,7 +165,6 @@ module "ecs" {
   task_cpu                 = var.ecs_task_cpu
   task_memory              = var.ecs_task_memory
   service_desired_count    = var.ecs_service_desired_count
-  gitlab_url               = var.gitlab_url
   enable_scheduled_tasks   = var.ecs_enable_scheduled_tasks
   schedule_expression      = var.ecs_schedule_expression
 

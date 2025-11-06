@@ -254,10 +254,3 @@ variable "ecs_schedule_expression" {
   type        = string
   default     = "rate(1 hour)"
 }
-
-# GitLab Variables
-variable "gitlab_url" {
-  description = "GitLab URL for CI/CD integration"
-  type        = string
-  default     = "https://gitlab.com"
-}

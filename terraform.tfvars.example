@@ -51,9 +51,6 @@ ecs_service_desired_count  = 1
 ecs_enable_scheduled_tasks = false
 ecs_schedule_expression    = "rate(1 hour)"
 
-# GitLab Configuration
-gitlab_url = "https://gitlab.com"  # Update with your GitLab instance URL
-
 # Additional Tags
 tags = {
   Owner       = "YourName"

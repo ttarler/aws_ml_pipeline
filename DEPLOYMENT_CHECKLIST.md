@@ -112,7 +112,6 @@ Use this checklist to ensure a successful deployment of your AWS GovCloud ML Pla
   - [ ] ECS Cluster name
   - [ ] S3 bucket names
   - [ ] ECR repository URLs
-  - [ ] GitLab credentials secret ARN
 
 ### Step 6: Verify Resources in AWS Console
 - [ ] VPC and Networking
@@ -149,18 +148,6 @@ Use this checklist to ensure a successful deployment of your AWS GovCloud ML Pla
   - [ ] CloudWatch log groups created
 
 ## Post-Deployment Configuration
-
-### Configure GitLab Integration
-- [ ] Create GitLab access token
-- [ ] Update Secrets Manager with GitLab credentials
-  ```bash
-  aws secretsmanager update-secret \
-    --secret-id <secret-arn> \
-    --secret-string '{"gitlab_url":"https://gitlab.com","gitlab_token":"TOKEN","gitlab_project_id":"PROJECT_ID"}' \
-    --region us-gov-west-1
-  ```
-- [ ] Verify secret updated successfully
-- [ ] Configure GitLab CI/CD variables
 
 ### Access SageMaker Studio
 - [ ] Navigate to SageMaker console
@@ -335,7 +322,6 @@ Deployment is considered successful when:
 - [ ] EMR cluster is operational and accepts jobs
 - [ ] ECS tasks can be deployed and executed
 - [ ] Data can be uploaded to and accessed from S3
-- [ ] GitLab integration is configured and working
 - [ ] Monitoring and alerting is operational
 - [ ] Documentation is complete
 - [ ] Team is trained on the platform

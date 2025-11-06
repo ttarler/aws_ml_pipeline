@@ -109,11 +109,6 @@ output "ecr_repository_urls" {
   value       = module.ecs.ecr_repository_urls
 }
 
-output "gitlab_credentials_secret_arn" {
-  description = "ARN of the GitLab credentials secret in Secrets Manager"
-  value       = module.ecs.gitlab_credentials_secret_arn
-}
-
 # Connection Information
 output "connection_info" {
   description = "Connection information for accessing the platform"
@@ -136,7 +131,6 @@ output "next_steps" {
     2. Upload data to the landing zone bucket: s3://${module.s3.landing_zone_bucket_id}/
     ${var.enable_emr ? "3. Connect to EMR cluster: ${module.emr[0].cluster_id}" : "3. EMR cluster not enabled"}
     4. Push Docker images to ECR repositories: ${join(", ", module.ecs.ecr_repository_urls)}
-    5. Update GitLab credentials in Secrets Manager: ${module.ecs.gitlab_credentials_secret_arn}
 
     For more information, see the README.md file.
   EOT

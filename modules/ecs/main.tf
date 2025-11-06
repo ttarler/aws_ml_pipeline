@@ -184,33 +184,6 @@ resource "aws_ecs_service" "ml_workload" {
   )
 }
 
-# Secrets Manager secret for GitLab credentials
-resource "aws_secretsmanager_secret" "gitlab_credentials" {
-  name        = "${var.project_name}/gitlab-credentials"
-  description = "GitLab credentials for CI/CD integration"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-gitlab-credentials"
-    }
-  )
-}
-
-# Secrets Manager secret version (placeholder - users should update)
-resource "aws_secretsmanager_secret_version" "gitlab_credentials" {
-  secret_id = aws_secretsmanager_secret.gitlab_credentials.id
-  secret_string = jsonencode({
-    gitlab_url        = var.gitlab_url
-    gitlab_token      = "PLACEHOLDER_UPDATE_ME"
-    gitlab_project_id = "PLACEHOLDER_UPDATE_ME"
-  })
-
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
-}
-
 # CloudWatch Event Rule for scheduled ECS tasks
 resource "aws_cloudwatch_event_rule" "scheduled_task" {
   count               = var.enable_scheduled_tasks ? 1 : 0

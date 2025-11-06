@@ -7,7 +7,6 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - **Amazon ECS** for containerized workloads
 - **Private VPC** with no public internet access
 - **S3 Landing Zone** for data storage
-- **GitLab Integration** for Docker container management
 
 ## Architecture Overview
 
@@ -75,7 +74,6 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - ECS Cluster with Fargate support
 - ECR repositories for Docker images
 - Sample task definitions and services
-- Integration with GitLab for CI/CD
 - Secrets Manager for credential management
 - Optional scheduled tasks for recurring workloads
 
@@ -170,25 +168,14 @@ Save these outputs for accessing your infrastructure.
 
 ## Post-Deployment Configuration
 
-### 1. Update GitLab Credentials
-
-Update the GitLab credentials in AWS Secrets Manager:
-
-```bash
-aws secretsmanager update-secret \
-  --secret-id <gitlab-secret-arn> \
-  --secret-string '{"gitlab_url":"https://gitlab.com","gitlab_token":"YOUR_TOKEN","gitlab_project_id":"YOUR_PROJECT_ID"}' \
-  --region us-gov-west-1
-```
-
-### 2. Access SageMaker Studio
+### 1. Access SageMaker Studio
 
 1. Navigate to the SageMaker console in AWS GovCloud
 2. Open SageMaker Studio using the domain URL from outputs
 3. Create a new user profile or use the default profile
 4. Launch Studio
 
-### 3. Connect SageMaker to EMR
+### 2. Connect SageMaker to EMR
 
 The infrastructure includes lifecycle configurations for EMR connectivity. To use EMR from SageMaker:
 
@@ -202,7 +189,7 @@ Example notebook cell:
 sc.version  # This will connect to EMR and show Spark version
 ```
 
-### 4. Push Docker Images to ECR
+### 3. Push Docker Images to ECR
 
 ```bash
 # Get ECR login

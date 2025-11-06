@@ -69,12 +69,6 @@ variable "service_desired_count" {
   default     = 1
 }
 
-variable "gitlab_url" {
-  description = "GitLab URL for CI/CD integration"
-  type        = string
-  default     = "https://gitlab.com"
-}
-
 variable "enable_scheduled_tasks" {
   description = "Whether to enable scheduled ECS tasks"
   type        = bool
