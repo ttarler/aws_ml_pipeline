@@ -32,3 +32,18 @@ output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group"
   value       = aws_cloudwatch_log_group.emr.name
 }
+
+output "emr_master_security_group_id" {
+  description = "ID of EMR master security group"
+  value       = var.emr_master_security_group_id
+}
+
+output "emr_slave_security_group_id" {
+  description = "ID of EMR slave security group"
+  value       = var.emr_slave_security_group_id
+}
+
+output "emr_service_security_group_id" {
+  description = "ID of EMR service security group"
+  value       = var.emr_service_security_group_id
+}
