@@ -45,14 +45,17 @@ resource "aws_emr_cluster" "main" {
   }
 
   # Bootstrap action to configure EMR for SageMaker connectivity
-  bootstrap_action {
-    name = "Install Livy and configure for SageMaker"
-    path = "s3://${var.bootstrap_scripts_bucket}/bootstrap-emr-sagemaker.sh"
+  dynamic "bootstrap_action" {
+    for_each = var.create_bootstrap_script ? [1] : []
+    content {
+      name = "Install Livy and configure for SageMaker"
+      path = "s3://${var.bootstrap_scripts_bucket}/bootstrap-emr-sagemaker.sh"
 
-    args = [
-      "--sagemaker-enabled",
-      "true"
-    ]
+      args = [
+        "--sagemaker-enabled",
+        "true"
+      ]
+    }
   }
 
   # Configure EMR with custom settings
@@ -101,6 +104,8 @@ resource "aws_emr_cluster" "main" {
       Environment = var.environment
     }
   )
+
+  depends_on = [aws_s3_object.bootstrap_script]
 }
 
 # EMR Task Instance Group with Spot Instances
