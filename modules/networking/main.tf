@@ -12,6 +12,26 @@ resource "aws_vpc" "main" {
   )
 }
 
+# VPC DHCP Options (Custom DNS servers)
+resource "aws_vpc_dhcp_options" "main" {
+  count               = length(var.custom_dns_servers) > 0 ? 1 : 0
+  domain_name_servers = var.custom_dns_servers
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-dhcp-options"
+    }
+  )
+}
+
+# Associate DHCP Options with VPC
+resource "aws_vpc_dhcp_options_association" "main" {
+  count           = length(var.custom_dns_servers) > 0 ? 1 : 0
+  vpc_id          = aws_vpc.main.id
+  dhcp_options_id = aws_vpc_dhcp_options.main[0].id
+}
+
 # Private Subnets
 resource "aws_subnet" "private" {
   count             = length(var.private_subnet_cidrs)
@@ -83,6 +103,37 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public[0].id
 }
 
+# Elastic IP for NAT Gateway
+resource "aws_eip" "nat" {
+  count  = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? 1 : 0
+  domain = "vpc"
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-nat-eip"
+    }
+  )
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "main" {
+  count         = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? 1 : 0
+  allocation_id = aws_eip.nat[0].id
+  subnet_id     = aws_subnet.public[0].id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-nat-gw"
+    }
+  )
+
+  depends_on = [aws_internet_gateway.main]
+}
+
 # Route Table for Private Subnets
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
@@ -93,6 +144,14 @@ resource "aws_route_table" "private" {
       Name = "${var.project_name}-private-rt"
     }
   )
+}
+
+# Route to NAT Gateway for private subnets
+resource "aws_route" "private_nat_gateway" {
+  count                  = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? 1 : 0
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[0].id
 }
 
 # Route Table Associations

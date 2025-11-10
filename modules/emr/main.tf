@@ -222,78 +222,24 @@ echo "========================================="
 echo "Starting bootstrap script at $(date)"
 echo "========================================="
 
-# Configure proxy for yum and pip
-echo "Configuring proxy settings..."
-export http_proxy=http://p1proxy.frb.org:8080
-export https_proxy=http://p1proxy.frb.org:8080
-export HTTP_PROXY=http://p1proxy.frb.org:8080
-export HTTPS_PROXY=http://p1proxy.frb.org:8080
-export no_proxy=localhost,127.0.0.1,169.254.169.254
-export NO_PROXY=localhost,127.0.0.1,169.254.169.254
-
-echo "Proxy settings configured"
-
-# Configure yum proxy
-echo "Configuring yum proxy..."
-if ! grep -q "proxy=" /etc/yum.conf; then
-    echo "proxy=http://p1proxy.frb.org:8080" | sudo tee -a /etc/yum.conf
-fi
-
-# Test proxy connectivity
-echo "Testing proxy connectivity..."
-curl -x http://p1proxy.frb.org:8080 --connect-timeout 10 -I https://nexus.cloud.frb.org/repository/pypi/simple || {
-    echo "WARNING: Cannot reach Nexus repository through proxy"
-}
-
-# Install Python3 if not present (skip yum update to avoid issues)
+# Install Python3 if not present
 echo "Installing Python3 and pip..."
-sudo -E yum install -y python3 python3-pip || {
+sudo yum install -y python3 python3-pip || {
     echo "ERROR: Failed to install Python3 and pip"
     exit 1
 }
 
 echo "Python3 version: $(python3 --version)"
 
-# Configure pip to use proxy and internal PyPI repository
-echo "Configuring pip..."
-sudo mkdir -p /etc/pip
-cat <<'EOL' | sudo tee /etc/pip.conf
-[global]
-index-url = https://nexus.cloud.frb.org/repository/pypi/simple
-trusted-host = nexus.cloud.frb.org
-proxy = http://p1proxy.frb.org:8080
-EOL
-
-# Also configure for current user
-mkdir -p ~/.pip
-cat <<'EOL' > ~/.pip/pip.conf
-[global]
-index-url = https://nexus.cloud.frb.org/repository/pypi/simple
-trusted-host = nexus.cloud.frb.org
-proxy = http://p1proxy.frb.org:8080
-EOL
-
-# Also configure for hadoop user (EMR default user)
-sudo mkdir -p /home/hadoop/.pip
-cat <<'EOL' | sudo tee /home/hadoop/.pip/pip.conf
-[global]
-index-url = https://nexus.cloud.frb.org/repository/pypi/simple
-trusted-host = nexus.cloud.frb.org
-proxy = http://p1proxy.frb.org:8080
-EOL
-sudo chown -R hadoop:hadoop /home/hadoop/.pip
-
-echo "Pip configuration complete"
-
 # Upgrade pip
 echo "Upgrading pip..."
-sudo -E python3 -m pip install --upgrade pip || {
+sudo python3 -m pip install --upgrade pip || {
     echo "WARNING: Failed to upgrade pip, continuing with existing version"
 }
 
 # Install additional Python packages for data science
 echo "Installing Python packages: boto3 pandas numpy scikit-learn..."
-sudo -E python3 -m pip install boto3 pandas numpy scikit-learn || {
+sudo python3 -m pip install boto3 pandas numpy scikit-learn || {
     echo "ERROR: Failed to install Python packages"
     exit 1
 }

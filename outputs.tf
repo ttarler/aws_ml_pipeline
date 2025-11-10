@@ -24,6 +24,26 @@ output "bastion_instance_id" {
   value       = module.networking.bastion_instance_id
 }
 
+output "nat_gateway_id" {
+  description = "ID of NAT Gateway (if enabled)"
+  value       = module.networking.nat_gateway_id
+}
+
+output "nat_gateway_public_ip" {
+  description = "Public IP of NAT Gateway (if enabled)"
+  value       = module.networking.nat_gateway_public_ip
+}
+
+output "dhcp_options_id" {
+  description = "ID of VPC DHCP options (if custom DNS configured)"
+  value       = module.networking.dhcp_options_id
+}
+
+output "custom_dns_servers" {
+  description = "Custom DNS servers configured in VPC"
+  value       = module.networking.custom_dns_servers
+}
+
 # S3 Outputs
 output "landing_zone_bucket_name" {
   description = "Name of the landing zone S3 bucket"

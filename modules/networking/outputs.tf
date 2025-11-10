@@ -67,3 +67,23 @@ output "bastion_security_group_id" {
   description = "Security group ID of bastion host"
   value       = var.enable_bastion ? aws_security_group.bastion[0].id : null
 }
+
+output "nat_gateway_id" {
+  description = "ID of NAT Gateway"
+  value       = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? aws_nat_gateway.main[0].id : null
+}
+
+output "nat_gateway_public_ip" {
+  description = "Public IP of NAT Gateway"
+  value       = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? aws_eip.nat[0].public_ip : null
+}
+
+output "dhcp_options_id" {
+  description = "ID of VPC DHCP options"
+  value       = length(var.custom_dns_servers) > 0 ? aws_vpc_dhcp_options.main[0].id : null
+}
+
+output "custom_dns_servers" {
+  description = "Custom DNS servers configured in VPC"
+  value       = var.custom_dns_servers
+}

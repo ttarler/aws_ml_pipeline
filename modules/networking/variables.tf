@@ -37,6 +37,18 @@ variable "bastion_key_name" {
   default     = ""
 }
 
+variable "enable_nat_gateway" {
+  description = "Whether to create a NAT Gateway for private subnet internet access (required for EMR to reach external repositories)"
+  type        = bool
+  default     = false
+}
+
+variable "custom_dns_servers" {
+  description = "List of custom DNS server IPs for VPC DHCP options"
+  type        = list(string)
+  default     = []
+}
+
 variable "availability_zones" {
   description = "Availability zones for subnets"
   type        = list(string)

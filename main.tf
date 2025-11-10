@@ -54,9 +54,11 @@ module "networking" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   availability_zones   = slice(data.aws_availability_zones.available.names, 0, max(length(var.private_subnet_cidrs), length(var.public_subnet_cidrs)))
   aws_region           = var.aws_region
-  enable_bastion       = var.enable_bastion
+  enable_bastion        = var.enable_bastion
   bastion_instance_type = var.bastion_instance_type
-  bastion_key_name     = var.bastion_key_name
+  bastion_key_name      = var.bastion_key_name
+  enable_nat_gateway    = var.enable_nat_gateway
+  custom_dns_servers    = var.custom_dns_servers
 
   tags = var.tags
 }

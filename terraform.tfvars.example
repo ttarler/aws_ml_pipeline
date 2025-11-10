@@ -10,11 +10,15 @@ aws_partition = "aws-us-gov"     # use "aws-us-gov" for GovCloud, "aws" for comm
 vpc_cidr             = "10.0.0.0/16"
 private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 public_subnet_cidrs  = ["10.0.101.0/24"]  # For bastion host
+custom_dns_servers   = []  # List of custom DNS server IPs (e.g., ["10.0.0.2", "10.0.0.3"])
 
 # Bastion Host Configuration (for SSH access to EMR)
 enable_bastion        = false  # Set to true to create bastion host
 bastion_instance_type = "t3.micro"
 bastion_key_name      = ""  # EC2 key pair name for SSH to bastion
+
+# NAT Gateway Configuration (required for EMR to reach external repositories)
+enable_nat_gateway = true  # Set to true to allow EMR instances to reach internet/internal repos
 
 # SageMaker Configuration
 sagemaker_jupyter_instance_type         = "system"

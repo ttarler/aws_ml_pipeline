@@ -66,6 +66,18 @@ variable "bastion_key_name" {
   default     = ""
 }
 
+variable "enable_nat_gateway" {
+  description = "Whether to create a NAT Gateway for private subnet internet access (required for EMR bootstrap to reach external/internal repositories)"
+  type        = bool
+  default     = true
+}
+
+variable "custom_dns_servers" {
+  description = "List of custom DNS server IPs for VPC DHCP options"
+  type        = list(string)
+  default     = []
+}
+
 # SageMaker Variables
 variable "sagemaker_jupyter_instance_type" {
   description = "Instance type for SageMaker Jupyter Server"
