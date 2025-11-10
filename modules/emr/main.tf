@@ -215,13 +215,37 @@ resource "aws_s3_object" "bootstrap_script" {
     #!/bin/bash
     set -e
 
+    # Configure proxy for yum
+    export http_proxy=http://p1proxy.frb.org:8080
+    export https_proxy=http://p1proxy.frb.org:8080
+    export HTTP_PROXY=http://p1proxy.frb.org:8080
+    export HTTPS_PROXY=http://p1proxy.frb.org:8080
+
     # Update yum and install Python3 if not present
-    sudo yum update -y
-    sudo yum install -y python3 python3-pip
+    sudo -E yum update -y
+    sudo -E yum install -y python3 python3-pip
+
+    # Configure pip to use proxy and internal PyPI repository
+    sudo mkdir -p /etc/pip
+    cat <<EOL | sudo tee /etc/pip.conf
+[global]
+index-url = https://nexus.cloud.frb.org/repository/pypi/simple
+trusted-host = nexus.cloud.frb.org
+proxy = http://p1proxy.frb.org:8080
+EOL
+
+    # Also configure for current user
+    mkdir -p ~/.pip
+    cat <<EOL > ~/.pip/pip.conf
+[global]
+index-url = https://nexus.cloud.frb.org/repository/pypi/simple
+trusted-host = nexus.cloud.frb.org
+proxy = http://p1proxy.frb.org:8080
+EOL
 
     # Install additional Python packages for data science
-    sudo python3 -m pip install --upgrade pip
-    sudo python3 -m pip install boto3 pandas numpy scikit-learn
+    sudo -E python3 -m pip install --upgrade pip
+    sudo -E python3 -m pip install boto3 pandas numpy scikit-learn
 
     # Note: Livy is automatically installed and configured by EMR via applications list
     # and configurations_json in the cluster definition
