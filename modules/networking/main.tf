@@ -729,33 +729,9 @@ resource "aws_security_group" "ecs" {
 # Bastion Host Security Group
 resource "aws_security_group" "bastion" {
   count       = var.enable_bastion ? 1 : 0
-  name_prefix = "${var.project_name}-bastion-sg"
+  name        = "${var.project_name}-bastion-sg"
   description = "Security group for bastion host"
   vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "SSH from anywhere (restrict this in production)"
-  }
-
-  ingress {
-    from_port   = -1
-    to_port     = -1
-    protocol    = "icmp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "ICMP ping from anywhere (for troubleshooting)"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow all outbound"
-  }
 
   tags = merge(
     var.tags,
@@ -763,6 +739,46 @@ resource "aws_security_group" "bastion" {
       Name = "${var.project_name}-bastion-sg"
     }
   )
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Bastion SSH Ingress Rule
+resource "aws_security_group_rule" "bastion_ssh_ingress" {
+  count             = var.enable_bastion ? 1 : 0
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "SSH from anywhere (restrict this in production)"
+  security_group_id = aws_security_group.bastion[0].id
+}
+
+# Bastion ICMP Ingress Rule
+resource "aws_security_group_rule" "bastion_icmp_ingress" {
+  count             = var.enable_bastion ? 1 : 0
+  type              = "ingress"
+  from_port         = -1
+  to_port           = -1
+  protocol          = "icmp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "ICMP ping from anywhere (for troubleshooting)"
+  security_group_id = aws_security_group.bastion[0].id
+}
+
+# Bastion Egress Rule
+resource "aws_security_group_rule" "bastion_egress" {
+  count             = var.enable_bastion ? 1 : 0
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow all outbound"
+  security_group_id = aws_security_group.bastion[0].id
 }
 
 # Get latest Amazon Linux 2023 AMI
