@@ -741,6 +741,14 @@ resource "aws_security_group" "bastion" {
     description = "SSH from anywhere (restrict this in production)"
   }
 
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "ICMP ping from anywhere (for troubleshooting)"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -776,12 +784,13 @@ data "aws_ami" "amazon_linux_2023" {
 
 # Bastion Host
 resource "aws_instance" "bastion" {
-  count                  = var.enable_bastion ? 1 : 0
-  ami                    = data.aws_ami.amazon_linux_2023[0].id
-  instance_type          = var.bastion_instance_type
-  key_name               = var.bastion_key_name
-  subnet_id              = aws_subnet.public[0].id
-  vpc_security_group_ids = [aws_security_group.bastion[0].id]
+  count                       = var.enable_bastion ? 1 : 0
+  ami                         = data.aws_ami.amazon_linux_2023[0].id
+  instance_type               = var.bastion_instance_type
+  key_name                    = var.bastion_key_name
+  subnet_id                   = aws_subnet.public[0].id
+  vpc_security_group_ids      = [aws_security_group.bastion[0].id]
+  associate_public_ip_address = true
 
   user_data = <<-EOF
               #!/bin/bash
@@ -795,4 +804,10 @@ resource "aws_instance" "bastion" {
       Name = "${var.project_name}-bastion"
     }
   )
+
+  depends_on = [
+    aws_internet_gateway.main,
+    aws_route_table.public,
+    aws_route_table_association.public
+  ]
 }
