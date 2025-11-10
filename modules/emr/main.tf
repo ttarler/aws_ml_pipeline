@@ -215,19 +215,16 @@ resource "aws_s3_object" "bootstrap_script" {
     #!/bin/bash
     set -e
 
-    # Install Livy for SageMaker connectivity
-    sudo amazon-linux-extras install -y epel
+    # Update yum and install Python3 if not present
+    sudo yum update -y
+    sudo yum install -y python3 python3-pip
 
-    # Configure Livy
-    cat <<EOL | sudo tee /etc/livy/conf/livy.conf
-    livy.server.session.timeout = 2h
-    livy.spark.master = yarn
-    livy.spark.deploy-mode = cluster
-    livy.file.local-dir-whitelist = /tmp
-    EOL
+    # Install additional Python packages for data science
+    sudo python3 -m pip install --upgrade pip
+    sudo python3 -m pip install boto3 pandas numpy scikit-learn
 
-    # Install additional Python packages
-    sudo pip3 install boto3 pandas numpy scikit-learn
+    # Note: Livy is automatically installed and configured by EMR via applications list
+    # and configurations_json in the cluster definition
 
     echo "Bootstrap completed successfully"
   EOF
