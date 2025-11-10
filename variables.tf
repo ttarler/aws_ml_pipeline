@@ -81,9 +81,9 @@ variable "enable_emr" {
 }
 
 variable "emr_release_label" {
-  description = "EMR release label (e.g., emr-6.15.0)"
+  description = "EMR release label (e.g., emr-7.10.0)"
   type        = string
-  default     = "emr-6.15.0"
+  default     = "emr-7.10.0"
 }
 
 variable "emr_applications" {

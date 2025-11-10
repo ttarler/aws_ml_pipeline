@@ -12,7 +12,7 @@ variable "environment" {
 variable "emr_release_label" {
   description = "EMR release label"
   type        = string
-  default     = "emr-6.15.0"
+  default     = "emr-7.10.0"
 }
 
 variable "emr_applications" {

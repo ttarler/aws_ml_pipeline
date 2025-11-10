@@ -88,6 +88,11 @@ output "emr_master_dns" {
   value       = var.enable_emr ? module.emr[0].master_public_dns : null
 }
 
+output "emr_master_public_dns" {
+  description = "Public DNS of the EMR master node (if created) - alias for emr_master_dns"
+  value       = var.enable_emr ? module.emr[0].master_public_dns : null
+}
+
 output "emr_log_uri" {
   description = "S3 URI for EMR logs (if created)"
   value       = var.enable_emr ? module.emr[0].log_uri : null

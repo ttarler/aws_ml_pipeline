@@ -19,7 +19,7 @@ sagemaker_enable_feature_store          = false  # Set to true to enable Feature
 
 # EMR Configuration
 enable_emr                       = true
-emr_release_label                = "emr-6.15.0"
+emr_release_label                = "emr-7.10.0"
 emr_applications                 = ["Hadoop", "Spark", "Livy", "Hive", "JupyterHub", "JupyterEnterpriseGateway"]
 emr_create_bootstrap_script      = true
 emr_ec2_key_name                 = ""  # Name of your EC2 key pair for SSH access (e.g., "my-keypair")
