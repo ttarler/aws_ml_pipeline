@@ -127,6 +127,7 @@ module "emr" {
   emr_service_security_group_id = module.networking.emr_service_security_group_id
   emr_service_role_arn          = module.iam.emr_service_role_arn
   emr_ec2_instance_profile_name = module.iam.emr_ec2_instance_profile_name
+  emr_autoscaling_role_arn      = module.iam.emr_autoscaling_role_arn
   emr_logs_bucket_id            = module.s3.emr_logs_bucket_id
   bootstrap_scripts_bucket      = module.s3.emr_logs_bucket_id
   create_bootstrap_script       = var.emr_create_bootstrap_script

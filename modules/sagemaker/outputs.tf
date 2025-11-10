@@ -42,3 +42,8 @@ output "feature_group_name" {
   description = "Name of the feature group"
   value       = var.enable_feature_store ? aws_sagemaker_feature_group.ml_features[0].feature_group_name : null
 }
+
+output "govcloud_compatible_instance_types" {
+  description = "List of SageMaker instance types commonly available in AWS GovCloud"
+  value       = local.govcloud_compatible_notebook_types
+}

@@ -173,6 +173,9 @@ output "next_steps" {
     ${var.enable_emr && var.enable_bastion ? "3. SSH to EMR via bastion:\n       ssh -i bastion-key.pem ec2-user@${module.networking.bastion_public_ip}\n       ssh -i emr-key.pem hadoop@${module.emr[0].master_public_dns}" : var.enable_emr ? "3. Connect to EMR cluster: ${module.emr[0].cluster_id} (bastion not enabled)" : "3. EMR cluster not enabled"}
     4. Push Docker images to ECR repositories: ${join(", ", module.ecs.ecr_repository_urls)}
 
+    To check available SageMaker instance types:
+      ./scripts/check-sagemaker-instance-types.sh ${var.aws_region}
+
     For more information, see the README.md file.
   EOT
 }

@@ -51,6 +51,12 @@ variable "emr_ec2_instance_profile_name" {
   type        = string
 }
 
+variable "emr_autoscaling_role_arn" {
+  description = "ARN of EMR autoscaling role"
+  type        = string
+  default     = ""
+}
+
 variable "emr_logs_bucket_id" {
   description = "ID of S3 bucket for EMR logs"
   type        = string

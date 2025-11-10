@@ -1,3 +1,20 @@
+# Local variables for instance type validation
+locals {
+  # Common SageMaker instance types available in AWS GovCloud
+  govcloud_compatible_notebook_types = [
+    "ml.t3.medium",
+    "ml.t3.large",
+    "ml.t3.xlarge",
+    "ml.m5.large",
+    "ml.m5.xlarge",
+    "ml.m5.2xlarge",
+    "ml.m5.4xlarge",
+    "ml.c5.large",
+    "ml.c5.xlarge",
+    "ml.c5.2xlarge"
+  ]
+}
+
 # SageMaker Domain
 resource "aws_sagemaker_domain" "main" {
   domain_name = "${var.project_name}-domain"

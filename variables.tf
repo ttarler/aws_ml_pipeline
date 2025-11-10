@@ -88,13 +88,13 @@ variable "sagemaker_jupyter_instance_type" {
 variable "sagemaker_kernel_gateway_instance_type" {
   description = "Instance type for SageMaker Kernel Gateway"
   type        = string
-  default     = "ml.t3.medium"
+  default     = "ml.m5.large"
 }
 
 variable "sagemaker_notebook_instance_type" {
-  description = "Instance type for SageMaker Notebook"
+  description = "Instance type for SageMaker Notebook (common GovCloud types: ml.m5.large, ml.m5.xlarge, ml.m5.2xlarge)"
   type        = string
-  default     = "ml.t3.medium"
+  default     = "ml.m5.large"
 }
 
 variable "sagemaker_create_notebook_instance" {

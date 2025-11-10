@@ -4,7 +4,8 @@ resource "aws_emr_cluster" "main" {
   release_label = var.emr_release_label
   applications  = var.emr_applications
 
-  service_role = var.emr_service_role_arn
+  service_role       = var.emr_service_role_arn
+  autoscaling_role   = var.emr_autoscaling_role_arn != "" ? var.emr_autoscaling_role_arn : null
 
   termination_protection            = false
   keep_job_flow_alive_when_no_steps = true
