@@ -511,6 +511,22 @@ resource "aws_security_group" "emr_service" {
     description     = "HTTPS API access from SageMaker"
   }
 
+  ingress {
+    from_port       = 9443
+    to_port         = 9443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.emr_master.id]
+    description     = "HTTPS API access from EMR master"
+  }
+
+  ingress {
+    from_port       = 9443
+    to_port         = 9443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.emr_slave.id]
+    description     = "HTTPS API access from EMR slave"
+  }
+
   egress {
     from_port       = 8443
     to_port         = 8443
@@ -575,26 +591,6 @@ resource "aws_security_group_rule" "emr_slave_9443_from_service" {
   source_security_group_id = aws_security_group.emr_service.id
   security_group_id        = aws_security_group.emr_slave.id
   description              = "HTTPS API access from EMR service"
-}
-
-resource "aws_security_group_rule" "emr_service_9443_from_master" {
-  type                     = "ingress"
-  from_port                = 9443
-  to_port                  = 9443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.emr_master.id
-  security_group_id        = aws_security_group.emr_service.id
-  description              = "HTTPS API access from EMR master"
-}
-
-resource "aws_security_group_rule" "emr_service_9443_from_slave" {
-  type                     = "ingress"
-  from_port                = 9443
-  to_port                  = 9443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.emr_slave.id
-  security_group_id        = aws_security_group.emr_service.id
-  description              = "HTTPS API access from EMR slave"
 }
 
 # Security Group for ECS
