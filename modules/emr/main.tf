@@ -16,6 +16,7 @@ resource "aws_emr_cluster" "main" {
     emr_managed_slave_security_group  = var.emr_slave_security_group_id
     service_access_security_group     = var.emr_service_security_group_id
     instance_profile                  = var.emr_ec2_instance_profile_name
+    key_name                          = var.ec2_key_name != "" ? var.ec2_key_name : null
   }
 
   master_instance_group {

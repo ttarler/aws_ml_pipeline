@@ -67,6 +67,12 @@ variable "create_bootstrap_script" {
   default     = true
 }
 
+variable "ec2_key_name" {
+  description = "EC2 key pair name for SSH access to EMR cluster"
+  type        = string
+  default     = ""
+}
+
 # Master node configuration
 variable "master_instance_type" {
   description = "Instance type for master node"

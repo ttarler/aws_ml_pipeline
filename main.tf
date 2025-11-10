@@ -124,6 +124,7 @@ module "emr" {
   emr_logs_bucket_id            = module.s3.emr_logs_bucket_id
   bootstrap_scripts_bucket      = module.s3.emr_logs_bucket_id
   create_bootstrap_script       = var.emr_create_bootstrap_script
+  ec2_key_name                  = var.emr_ec2_key_name
   master_instance_type          = var.emr_master_instance_type
   master_ebs_size               = var.emr_master_ebs_size
   core_instance_type            = var.emr_core_instance_type
