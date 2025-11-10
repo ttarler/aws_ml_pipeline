@@ -9,6 +9,21 @@ output "private_subnet_ids" {
   value       = module.networking.private_subnet_ids
 }
 
+output "public_subnet_ids" {
+  description = "IDs of public subnets"
+  value       = module.networking.public_subnet_ids
+}
+
+output "bastion_public_ip" {
+  description = "Public IP of bastion host (if enabled)"
+  value       = module.networking.bastion_public_ip
+}
+
+output "bastion_instance_id" {
+  description = "Instance ID of bastion host (if enabled)"
+  value       = module.networking.bastion_instance_id
+}
+
 # S3 Outputs
 output "landing_zone_bucket_name" {
   description = "Name of the landing zone S3 bucket"
@@ -120,6 +135,7 @@ output "connection_info" {
   value = {
     sagemaker_studio_url = module.sagemaker.domain_url
     emr_master_dns       = var.enable_emr ? module.emr[0].master_public_dns : "EMR not enabled"
+    bastion_public_ip    = var.enable_bastion ? module.networking.bastion_public_ip : "Bastion not enabled"
     ecs_cluster          = module.ecs.cluster_name
     landing_zone_bucket  = module.s3.landing_zone_bucket_id
   }
@@ -134,7 +150,7 @@ output "next_steps" {
     Next Steps:
     1. Access SageMaker Studio at: ${module.sagemaker.domain_url}
     2. Upload data to the landing zone bucket: s3://${module.s3.landing_zone_bucket_id}/
-    ${var.enable_emr ? "3. Connect to EMR cluster: ${module.emr[0].cluster_id}" : "3. EMR cluster not enabled"}
+    ${var.enable_emr && var.enable_bastion ? "3. SSH to EMR via bastion:\n       ssh -i bastion-key.pem ec2-user@${module.networking.bastion_public_ip}\n       ssh -i emr-key.pem hadoop@${module.emr[0].master_public_dns}" : var.enable_emr ? "3. Connect to EMR cluster: ${module.emr[0].cluster_id} (bastion not enabled)" : "3. EMR cluster not enabled"}
     4. Push Docker images to ECR repositories: ${join(", ", module.ecs.ecr_repository_urls)}
 
     For more information, see the README.md file.

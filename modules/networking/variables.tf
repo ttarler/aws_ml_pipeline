@@ -13,6 +13,30 @@ variable "private_subnet_cidrs" {
   type        = list(string)
 }
 
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets (for bastion host)"
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_bastion" {
+  description = "Whether to create a bastion host"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_instance_type" {
+  description = "Instance type for bastion host"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "bastion_key_name" {
+  description = "EC2 key pair name for bastion host"
+  type        = string
+  default     = ""
+}
+
 variable "availability_zones" {
   description = "Availability zones for subnets"
   type        = list(string)

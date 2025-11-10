@@ -42,6 +42,30 @@ variable "private_subnet_cidrs" {
   default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
 }
 
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets (for bastion host)"
+  type        = list(string)
+  default     = ["10.0.101.0/24"]
+}
+
+variable "enable_bastion" {
+  description = "Whether to create a bastion host for SSH access to EMR"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_instance_type" {
+  description = "Instance type for bastion host"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "bastion_key_name" {
+  description = "EC2 key pair name for bastion host (required if enable_bastion is true)"
+  type        = string
+  default     = ""
+}
+
 # SageMaker Variables
 variable "sagemaker_jupyter_instance_type" {
   description = "Instance type for SageMaker Jupyter Server"

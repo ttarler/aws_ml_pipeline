@@ -28,6 +28,61 @@ resource "aws_subnet" "private" {
   )
 }
 
+# Public Subnets (for bastion host)
+resource "aws_subnet" "public" {
+  count                   = length(var.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = var.availability_zones[count.index]
+  map_public_ip_on_launch = true
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-public-subnet-${count.index + 1}"
+      Type = "Public"
+    }
+  )
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "main" {
+  count  = length(var.public_subnet_cidrs) > 0 ? 1 : 0
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-igw"
+    }
+  )
+}
+
+# Route Table for Public Subnets
+resource "aws_route_table" "public" {
+  count  = length(var.public_subnet_cidrs) > 0 ? 1 : 0
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main[0].id
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-public-rt"
+    }
+  )
+}
+
+# Public Route Table Associations
+resource "aws_route_table_association" "public" {
+  count          = length(aws_subnet.public)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public[0].id
+}
+
 # Route Table for Private Subnets
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
@@ -421,6 +476,14 @@ resource "aws_security_group" "emr_master" {
     description     = "HTTPS API access from SageMaker"
   }
 
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.enable_bastion && length(var.public_subnet_cidrs) > 0 ? var.public_subnet_cidrs : []
+    description = "SSH from bastion host"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -659,6 +722,77 @@ resource "aws_security_group" "ecs" {
     var.tags,
     {
       Name = "${var.project_name}-ecs-sg"
+    }
+  )
+}
+
+# Bastion Host Security Group
+resource "aws_security_group" "bastion" {
+  count       = var.enable_bastion ? 1 : 0
+  name_prefix = "${var.project_name}-bastion-sg"
+  description = "Security group for bastion host"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH from anywhere (restrict this in production)"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound"
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-bastion-sg"
+    }
+  )
+}
+
+# Get latest Amazon Linux 2023 AMI
+data "aws_ami" "amazon_linux_2023" {
+  count       = var.enable_bastion ? 1 : 0
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Bastion Host
+resource "aws_instance" "bastion" {
+  count                  = var.enable_bastion ? 1 : 0
+  ami                    = data.aws_ami.amazon_linux_2023[0].id
+  instance_type          = var.bastion_instance_type
+  key_name               = var.bastion_key_name
+  subnet_id              = aws_subnet.public[0].id
+  vpc_security_group_ids = [aws_security_group.bastion[0].id]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y ec2-instance-connect
+              EOF
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-bastion"
     }
   )
 }

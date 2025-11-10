@@ -9,6 +9,12 @@ aws_partition = "aws-us-gov"     # use "aws-us-gov" for GovCloud, "aws" for comm
 # Networking Configuration
 vpc_cidr             = "10.0.0.0/16"
 private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24"]  # For bastion host
+
+# Bastion Host Configuration (for SSH access to EMR)
+enable_bastion        = false  # Set to true to create bastion host
+bastion_instance_type = "t3.micro"
+bastion_key_name      = ""  # EC2 key pair name for SSH to bastion
 
 # SageMaker Configuration
 sagemaker_jupyter_instance_type         = "system"
