@@ -240,6 +240,29 @@ resource "aws_iam_role_policy_attachment" "emr_service" {
   policy_arn = "arn:${var.partition}:iam::aws:policy/service-role/AmazonElasticMapReduceRole"
 }
 
+# Additional EMR Service policy for S3 bootstrap scripts
+resource "aws_iam_role_policy" "emr_service_s3" {
+  name = "${var.project_name}-emr-service-s3-policy"
+  role = aws_iam_role.emr_service.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "${var.s3_emr_logs_arn}",
+          "${var.s3_emr_logs_arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
 # EMR EC2 Instance Profile Role
 resource "aws_iam_role" "emr_ec2" {
   name = "${var.project_name}-emr-ec2-role"
