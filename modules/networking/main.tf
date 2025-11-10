@@ -437,6 +437,22 @@ resource "aws_security_group" "emr_master" {
     description     = "HTTPS to VPC endpoints"
   }
 
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS for S3 access via Gateway Endpoint"
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP for package downloads"
+  }
+
   tags = merge(
     var.tags,
     {
@@ -488,6 +504,22 @@ resource "aws_security_group" "emr_slave" {
     protocol        = "tcp"
     security_groups = [aws_security_group.vpc_endpoints.id]
     description     = "HTTPS to VPC endpoints"
+  }
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS for S3 access via Gateway Endpoint"
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP for package downloads"
   }
 
   tags = merge(
