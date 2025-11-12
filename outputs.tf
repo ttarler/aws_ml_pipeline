@@ -164,7 +164,7 @@ output "connection_info" {
 # Instructions
 output "next_steps" {
   description = "Next steps for using the infrastructure"
-  value = <<-EOT
+  value       = <<-EOT
     Infrastructure deployed successfully!
 
     Next Steps:

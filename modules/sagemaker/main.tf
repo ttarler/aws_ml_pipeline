@@ -23,7 +23,7 @@ resource "aws_sagemaker_domain" "main" {
   subnet_ids  = var.subnet_ids
 
   default_user_settings {
-    execution_role = var.execution_role_arn
+    execution_role  = var.execution_role_arn
     security_groups = [var.security_group_id]
 
     jupyter_server_app_settings {
@@ -45,7 +45,7 @@ resource "aws_sagemaker_domain" "main" {
   }
 
   default_space_settings {
-    execution_role = var.execution_role_arn
+    execution_role  = var.execution_role_arn
     security_groups = [var.security_group_id]
   }
 
@@ -62,7 +62,7 @@ resource "aws_sagemaker_user_profile" "default" {
   domain_id         = aws_sagemaker_domain.main.id
   user_profile_name = "default-user"
   user_settings {
-    execution_role = var.studio_user_role_arn
+    execution_role  = var.studio_user_role_arn
     security_groups = [var.security_group_id]
 
     jupyter_server_app_settings {
@@ -90,7 +90,7 @@ resource "aws_sagemaker_user_profile" "default" {
 resource "aws_sagemaker_studio_lifecycle_config" "emr_connection" {
   studio_lifecycle_config_name     = "${var.project_name}-emr-connection"
   studio_lifecycle_config_app_type = "JupyterServer"
-  studio_lifecycle_config_content  = base64encode(<<-EOF
+  studio_lifecycle_config_content = base64encode(<<-EOF
     #!/bin/bash
     set -e
 
@@ -143,14 +143,14 @@ resource "aws_sagemaker_studio_lifecycle_config" "emr_connection" {
 
 # SageMaker Notebook Instance (optional - for direct EMR access)
 resource "aws_sagemaker_notebook_instance" "emr_connector" {
-  count                   = var.create_notebook_instance ? 1 : 0
-  name                    = "${var.project_name}-emr-connector"
-  role_arn                = var.execution_role_arn
-  instance_type           = var.notebook_instance_type
-  subnet_id               = var.subnet_ids[0]
-  security_groups         = [var.security_group_id]
-  direct_internet_access  = var.notebook_direct_internet_access
-  volume_size             = 50
+  count                  = var.create_notebook_instance ? 1 : 0
+  name                   = "${var.project_name}-emr-connector"
+  role_arn               = var.execution_role_arn
+  instance_type          = var.notebook_instance_type
+  subnet_id              = var.subnet_ids[0]
+  security_groups        = [var.security_group_id]
+  direct_internet_access = var.notebook_direct_internet_access
+  volume_size            = 50
 
   # Lifecycle config disabled to prevent timeout issues in private subnets
   # The lifecycle script requires internet access to install packages
@@ -168,7 +168,7 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
 # Disabled by default to prevent timeout issues when installing packages in private subnets
 # To enable: change count condition and uncomment lifecycle_config_name in notebook instance above
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
-  count = 0  # Disabled - was: var.create_notebook_instance && var.emr_master_dns != "" ? 1 : 0
+  count = 0 # Disabled - was: var.create_notebook_instance && var.emr_master_dns != "" ? 1 : 0
   name  = "${var.project_name}-emr-setup"
 
   on_start = base64encode(<<-EOF
@@ -215,8 +215,8 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
 
 # SageMaker Feature Store (optional - for ML feature management)
 resource "aws_sagemaker_feature_group" "ml_features" {
-  count               = var.enable_feature_store ? 1 : 0
-  feature_group_name  = "${var.project_name}-ml-features"
+  count                          = var.enable_feature_store ? 1 : 0
+  feature_group_name             = "${var.project_name}-ml-features"
   record_identifier_feature_name = "record_id"
   event_time_feature_name        = "event_time"
 
@@ -252,7 +252,7 @@ resource "aws_sagemaker_feature_group" "ml_features" {
 
 # SageMaker Model Registry (for model versioning)
 resource "aws_sagemaker_model_package_group" "models" {
-  model_package_group_name = "${var.project_name}-models"
+  model_package_group_name        = "${var.project_name}-models"
   model_package_group_description = "Model package group for ${var.project_name}"
 
   tags = merge(

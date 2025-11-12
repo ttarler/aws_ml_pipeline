@@ -130,6 +130,52 @@ resource "aws_iam_role_policy_attachment" "sagemaker_full_access" {
   policy_arn = "arn:${var.partition}:iam::aws:policy/AmazonSageMakerFullAccess"
 }
 
+# Additional SageMaker permissions for Studio apps and spaces
+resource "aws_iam_role_policy" "sagemaker_studio_permissions" {
+  name = "${var.project_name}-sagemaker-studio-permissions"
+  role = aws_iam_role.sagemaker_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sagemaker:CreateApp",
+          "sagemaker:DeleteApp",
+          "sagemaker:DescribeApp",
+          "sagemaker:CreateSpace",
+          "sagemaker:UpdateSpace",
+          "sagemaker:DeleteSpace",
+          "sagemaker:DescribeSpace",
+          "sagemaker:ListSpaces",
+          "sagemaker:AddTags",
+          "sagemaker:DeleteTags",
+          "sagemaker:ListTags"
+        ]
+        Resource = [
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:app/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:space/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:domain/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:user-profile/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sagemaker:CreatePresignedDomainUrl",
+          "sagemaker:DescribeDomain",
+          "sagemaker:DescribeUserProfile",
+          "sagemaker:ListApps",
+          "sagemaker:ListDomains",
+          "sagemaker:ListUserProfiles"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # SageMaker Studio Domain Execution Role
 resource "aws_iam_role" "sagemaker_studio_user" {
   name = "${var.project_name}-sagemaker-studio-user-role"
@@ -204,6 +250,40 @@ resource "aws_iam_role_policy" "sagemaker_studio_user" {
             "iam:PassedToService" = "elasticmapreduce.amazonaws.com"
           }
         }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sagemaker:CreateApp",
+          "sagemaker:DeleteApp",
+          "sagemaker:DescribeApp",
+          "sagemaker:CreateSpace",
+          "sagemaker:UpdateSpace",
+          "sagemaker:DeleteSpace",
+          "sagemaker:DescribeSpace",
+          "sagemaker:ListSpaces",
+          "sagemaker:AddTags",
+          "sagemaker:DeleteTags",
+          "sagemaker:ListTags"
+        ]
+        Resource = [
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:app/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:space/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:domain/*",
+          "arn:${var.partition}:sagemaker:${var.aws_region}:${var.account_id}:user-profile/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sagemaker:CreatePresignedDomainUrl",
+          "sagemaker:DescribeDomain",
+          "sagemaker:DescribeUserProfile",
+          "sagemaker:ListApps",
+          "sagemaker:ListDomains",
+          "sagemaker:ListUserProfiles"
+        ]
+        Resource = "*"
       }
     ]
   })

@@ -163,8 +163,8 @@ resource "aws_route_table_association" "private" {
 
 # Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoints" {
-  description      = "Security group for VPC endpoints"
-  vpc_id           = aws_vpc.main.id
+  description = "Security group for VPC endpoints"
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 443
@@ -450,10 +450,10 @@ resource "aws_security_group" "sagemaker" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port = 0
-    to_port   = 65535
-    protocol  = "tcp"
-    self      = true
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    self        = true
     description = "Allow all TCP traffic within security group"
   }
 
@@ -520,10 +520,10 @@ resource "aws_security_group" "emr_master" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port = 0
-    to_port   = 65535
-    protocol  = "tcp"
-    self      = true
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    self        = true
     description = "Allow all TCP traffic within security group"
   }
 
@@ -605,10 +605,10 @@ resource "aws_security_group" "emr_slave" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port = 0
-    to_port   = 65535
-    protocol  = "tcp"
-    self      = true
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    self        = true
     description = "Allow all TCP traffic within security group"
   }
 

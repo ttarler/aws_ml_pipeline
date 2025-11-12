@@ -4,8 +4,8 @@ resource "aws_emr_cluster" "main" {
   release_label = var.emr_release_label
   applications  = var.emr_applications
 
-  service_role       = var.emr_service_role_arn
-  autoscaling_role   = var.emr_autoscaling_role_arn != "" ? var.emr_autoscaling_role_arn : null
+  service_role     = var.emr_service_role_arn
+  autoscaling_role = var.emr_autoscaling_role_arn != "" ? var.emr_autoscaling_role_arn : null
 
   termination_protection            = false
   keep_job_flow_alive_when_no_steps = true
@@ -134,28 +134,28 @@ resource "aws_emr_instance_group" "task_spot" {
     }
     Rules = [
       {
-        Name = "ScaleUpOnYARNMemory"
+        Name        = "ScaleUpOnYARNMemory"
         Description = "Scale up when YARN memory utilization is high"
         Action = {
           SimpleScalingPolicyConfiguration = {
-            AdjustmentType = "CHANGE_IN_CAPACITY"
+            AdjustmentType    = "CHANGE_IN_CAPACITY"
             ScalingAdjustment = 1
-            CoolDown = 300
+            CoolDown          = 300
           }
         }
         Trigger = {
           CloudWatchAlarmDefinition = {
             ComparisonOperator = "GREATER_THAN"
-            EvaluationPeriods = 1
-            MetricName = "YARNMemoryAvailablePercentage"
-            Namespace = "AWS/ElasticMapReduce"
-            Period = 300
-            Statistic = "AVERAGE"
-            Threshold = 75.0
-            Unit = "PERCENT"
+            EvaluationPeriods  = 1
+            MetricName         = "YARNMemoryAvailablePercentage"
+            Namespace          = "AWS/ElasticMapReduce"
+            Period             = 300
+            Statistic          = "AVERAGE"
+            Threshold          = 75.0
+            Unit               = "PERCENT"
             Dimensions = [
               {
-                Key = "JobFlowId"
+                Key   = "JobFlowId"
                 Value = "$${emr.clusterId}"
               }
             ]
@@ -163,28 +163,28 @@ resource "aws_emr_instance_group" "task_spot" {
         }
       },
       {
-        Name = "ScaleDownOnYARNMemory"
+        Name        = "ScaleDownOnYARNMemory"
         Description = "Scale down when YARN memory utilization is low"
         Action = {
           SimpleScalingPolicyConfiguration = {
-            AdjustmentType = "CHANGE_IN_CAPACITY"
+            AdjustmentType    = "CHANGE_IN_CAPACITY"
             ScalingAdjustment = -1
-            CoolDown = 300
+            CoolDown          = 300
           }
         }
         Trigger = {
           CloudWatchAlarmDefinition = {
             ComparisonOperator = "LESS_THAN"
-            EvaluationPeriods = 1
-            MetricName = "YARNMemoryAvailablePercentage"
-            Namespace = "AWS/ElasticMapReduce"
-            Period = 300
-            Statistic = "AVERAGE"
-            Threshold = 25.0
-            Unit = "PERCENT"
+            EvaluationPeriods  = 1
+            MetricName         = "YARNMemoryAvailablePercentage"
+            Namespace          = "AWS/ElasticMapReduce"
+            Period             = 300
+            Statistic          = "AVERAGE"
+            Threshold          = 25.0
+            Unit               = "PERCENT"
             Dimensions = [
               {
-                Key = "JobFlowId"
+                Key   = "JobFlowId"
                 Value = "$${emr.clusterId}"
               }
             ]
@@ -210,9 +210,9 @@ resource "aws_cloudwatch_log_group" "emr" {
 
 # S3 Bootstrap Script (placeholder - users should upload their own)
 resource "aws_s3_object" "bootstrap_script" {
-  count  = var.create_bootstrap_script ? 1 : 0
-  bucket = var.bootstrap_scripts_bucket
-  key    = "bootstrap-emr-sagemaker.sh"
+  count   = var.create_bootstrap_script ? 1 : 0
+  bucket  = var.bootstrap_scripts_bucket
+  key     = "bootstrap-emr-sagemaker.sh"
   content = <<-EOF
 #!/bin/bash
 set -x  # Print commands as they execute

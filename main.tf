@@ -48,12 +48,12 @@ data "aws_availability_zones" "available" {
 module "networking" {
   source = "./modules/networking"
 
-  project_name         = var.project_name
-  vpc_cidr             = var.vpc_cidr
-  private_subnet_cidrs = var.private_subnet_cidrs
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  availability_zones   = slice(data.aws_availability_zones.available.names, 0, max(length(var.private_subnet_cidrs), length(var.public_subnet_cidrs)))
-  aws_region           = var.aws_region
+  project_name          = var.project_name
+  vpc_cidr              = var.vpc_cidr
+  private_subnet_cidrs  = var.private_subnet_cidrs
+  public_subnet_cidrs   = var.public_subnet_cidrs
+  availability_zones    = slice(data.aws_availability_zones.available.names, 0, max(length(var.private_subnet_cidrs), length(var.public_subnet_cidrs)))
+  aws_region            = var.aws_region
   enable_bastion        = var.enable_bastion
   bastion_instance_type = var.bastion_instance_type
   bastion_key_name      = var.bastion_key_name
@@ -93,20 +93,20 @@ module "iam" {
 module "sagemaker" {
   source = "./modules/sagemaker"
 
-  project_name             = var.project_name
-  vpc_id                   = module.networking.vpc_id
-  subnet_ids               = module.networking.private_subnet_ids
-  security_group_id        = module.networking.sagemaker_security_group_id
-  execution_role_arn       = module.iam.sagemaker_execution_role_arn
-  studio_user_role_arn     = module.iam.sagemaker_studio_user_role_arn
-  sagemaker_bucket_id      = module.s3.sagemaker_bucket_id
-  jupyter_instance_type    = var.sagemaker_jupyter_instance_type
-  kernel_gateway_instance_type = var.sagemaker_kernel_gateway_instance_type
-  notebook_instance_type   = var.sagemaker_notebook_instance_type
+  project_name                    = var.project_name
+  vpc_id                          = module.networking.vpc_id
+  subnet_ids                      = module.networking.private_subnet_ids
+  security_group_id               = module.networking.sagemaker_security_group_id
+  execution_role_arn              = module.iam.sagemaker_execution_role_arn
+  studio_user_role_arn            = module.iam.sagemaker_studio_user_role_arn
+  sagemaker_bucket_id             = module.s3.sagemaker_bucket_id
+  jupyter_instance_type           = var.sagemaker_jupyter_instance_type
+  kernel_gateway_instance_type    = var.sagemaker_kernel_gateway_instance_type
+  notebook_instance_type          = var.sagemaker_notebook_instance_type
   notebook_direct_internet_access = var.sagemaker_notebook_direct_internet_access
-  create_notebook_instance = var.sagemaker_create_notebook_instance
-  enable_feature_store     = var.sagemaker_enable_feature_store
-  emr_master_dns           = var.enable_emr ? module.emr[0].master_public_dns : ""
+  create_notebook_instance        = var.sagemaker_create_notebook_instance
+  enable_feature_store            = var.sagemaker_enable_feature_store
+  emr_master_dns                  = var.enable_emr ? module.emr[0].master_public_dns : ""
 
   tags = var.tags
 
@@ -161,21 +161,21 @@ module "emr" {
 module "ecs" {
   source = "./modules/ecs"
 
-  project_name             = var.project_name
-  aws_region               = var.aws_region
-  subnet_ids               = module.networking.private_subnet_ids
-  security_group_id        = module.networking.ecs_security_group_id
-  task_execution_role_arn  = module.iam.ecs_task_execution_role_arn
-  task_role_arn            = module.iam.ecs_task_role_arn
-  landing_zone_bucket_id   = module.s3.landing_zone_bucket_id
-  ecr_repositories         = var.ecs_ecr_repositories
-  create_sample_task       = var.ecs_create_sample_task
-  create_sample_service    = var.ecs_create_sample_service
-  task_cpu                 = var.ecs_task_cpu
-  task_memory              = var.ecs_task_memory
-  service_desired_count    = var.ecs_service_desired_count
-  enable_scheduled_tasks   = var.ecs_enable_scheduled_tasks
-  schedule_expression      = var.ecs_schedule_expression
+  project_name            = var.project_name
+  aws_region              = var.aws_region
+  subnet_ids              = module.networking.private_subnet_ids
+  security_group_id       = module.networking.ecs_security_group_id
+  task_execution_role_arn = module.iam.ecs_task_execution_role_arn
+  task_role_arn           = module.iam.ecs_task_role_arn
+  landing_zone_bucket_id  = module.s3.landing_zone_bucket_id
+  ecr_repositories        = var.ecs_ecr_repositories
+  create_sample_task      = var.ecs_create_sample_task
+  create_sample_service   = var.ecs_create_sample_service
+  task_cpu                = var.ecs_task_cpu
+  task_memory             = var.ecs_task_memory
+  service_desired_count   = var.ecs_service_desired_count
+  enable_scheduled_tasks  = var.ecs_enable_scheduled_tasks
+  schedule_expression     = var.ecs_schedule_expression
 
   tags = var.tags
 
