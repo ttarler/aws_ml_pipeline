@@ -103,6 +103,7 @@ module "sagemaker" {
   jupyter_instance_type    = var.sagemaker_jupyter_instance_type
   kernel_gateway_instance_type = var.sagemaker_kernel_gateway_instance_type
   notebook_instance_type   = var.sagemaker_notebook_instance_type
+  notebook_direct_internet_access = var.sagemaker_notebook_direct_internet_access
   create_notebook_instance = var.sagemaker_create_notebook_instance
   enable_feature_store     = var.sagemaker_enable_feature_store
   emr_master_dns           = var.enable_emr ? module.emr[0].master_public_dns : ""

@@ -149,12 +149,12 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
   instance_type           = var.notebook_instance_type
   subnet_id               = var.subnet_ids[0]
   security_groups         = [var.security_group_id]
-  direct_internet_access  = "Disabled"
+  direct_internet_access  = var.notebook_direct_internet_access
   volume_size             = 50
 
-  # Lifecycle config is optional and only used if EMR DNS is provided
-  # Note: Lifecycle scripts may timeout in private subnets without internet access
-  # lifecycle_config_name = var.create_notebook_instance && var.emr_master_dns != "" ? aws_sagemaker_notebook_instance_lifecycle_configuration.emr_setup[0].name : null
+  # Lifecycle config disabled to prevent timeout issues in private subnets
+  # The lifecycle script requires internet access to install packages
+  # Configure EMR connectivity manually after notebook launches
 
   tags = merge(
     var.tags,
@@ -162,17 +162,13 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
       Name = "${var.project_name}-emr-connector-notebook"
     }
   )
-
-  timeouts {
-    create = "30m"
-    update = "20m"
-    delete = "20m"
-  }
 }
 
 # Lifecycle configuration for notebook instance
+# Disabled by default to prevent timeout issues when installing packages in private subnets
+# To enable: change count condition and uncomment lifecycle_config_name in notebook instance above
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
-  count = var.create_notebook_instance && var.emr_master_dns != "" ? 1 : 0
+  count = 0  # Disabled - was: var.create_notebook_instance && var.emr_master_dns != "" ? 1 : 0
   name  = "${var.project_name}-emr-setup"
 
   on_start = base64encode(<<-EOF

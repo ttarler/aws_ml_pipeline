@@ -109,6 +109,16 @@ variable "sagemaker_enable_feature_store" {
   default     = false
 }
 
+variable "sagemaker_notebook_direct_internet_access" {
+  description = "Whether to enable direct internet access for SageMaker notebook instance (Enabled = public subnet with public IP, Disabled = private subnet with NAT Gateway)"
+  type        = string
+  default     = "Disabled"
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.sagemaker_notebook_direct_internet_access)
+    error_message = "Must be either 'Enabled' or 'Disabled'."
+  }
+}
+
 # EMR Variables
 variable "enable_emr" {
   description = "Whether to create EMR cluster"

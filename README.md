@@ -5,7 +5,7 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - **Amazon SageMaker** with Studio and domain configuration
 - **Amazon EMR** with spot instance support for distributed data processing
 - **Amazon ECS** for containerized workloads
-- **Private VPC** with no public internet access
+- **Private VPC** with optional NAT Gateway for secure internet access
 - **S3 Landing Zone** for data storage
 
 ## Architecture Overview
@@ -49,10 +49,12 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 ## Features
 
 ### 1. Private Networking
-- VPC with private subnets only (no public internet access)
+- VPC with private subnets and optional NAT Gateway for internet access
 - VPC endpoints for all AWS services (S3, SageMaker, EMR, ECS, ECR, CloudWatch, etc.)
 - Security groups configured for least privilege access
 - All inter-service communication through private networking
+- Optional bastion host for SSH access to EMR clusters
+- Configurable custom DNS servers via DHCP options
 
 ### 2. Amazon SageMaker
 - SageMaker Domain and Studio setup
@@ -60,7 +62,7 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - User profiles with appropriate IAM roles
 - Model Registry for versioning
 - Optional Feature Store for ML feature management
-- Optional Notebook instances for direct EMR access
+- Optional Notebook instances with configurable internet access (via NAT Gateway or direct)
 
 ### 3. Amazon EMR
 - Base EMR cluster with configurable instance types

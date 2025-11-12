@@ -51,6 +51,16 @@ variable "notebook_instance_type" {
   default     = "ml.t3.medium"
 }
 
+variable "notebook_direct_internet_access" {
+  description = "Whether to enable direct internet access for notebook instance (Enabled = public subnet, Disabled = private subnet with NAT)"
+  type        = string
+  default     = "Disabled"
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.notebook_direct_internet_access)
+    error_message = "Must be either 'Enabled' or 'Disabled'."
+  }
+}
+
 variable "create_notebook_instance" {
   description = "Whether to create a SageMaker Notebook instance"
   type        = bool
