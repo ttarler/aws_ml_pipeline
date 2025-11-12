@@ -519,6 +519,13 @@ resource "aws_security_group" "emr_master" {
   description = "Security group for EMR master node"
   vpc_id      = aws_vpc.main.id
 
+  # Revoke all rules before deleting to speed up cleanup
+  revoke_rules_on_delete = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
   ingress {
     from_port   = 0
     to_port     = 65535
@@ -604,6 +611,13 @@ resource "aws_security_group" "emr_slave" {
   description = "Security group for EMR core and task nodes"
   vpc_id      = aws_vpc.main.id
 
+  # Revoke all rules before deleting to speed up cleanup
+  revoke_rules_on_delete = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
   ingress {
     from_port   = 0
     to_port     = 65535
@@ -672,6 +686,13 @@ resource "aws_security_group" "emr_service" {
   name_prefix = "${var.project_name}-emr-service-sg"
   description = "Security group for EMR service access"
   vpc_id      = aws_vpc.main.id
+
+  # Revoke all rules before deleting to speed up cleanup
+  revoke_rules_on_delete = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   ingress {
     from_port       = 9443

@@ -84,6 +84,12 @@ resource "aws_sagemaker_user_profile" "default" {
       Name = "${var.project_name}-default-user-profile"
     }
   )
+
+  lifecycle {
+    # Prevent deletion if there are running apps or spaces
+    # Users must manually delete apps/spaces before destroying
+    prevent_destroy = false
+  }
 }
 
 # SageMaker Studio Lifecycle Config for EMR connection

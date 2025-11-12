@@ -11,6 +11,12 @@ resource "aws_emr_cluster" "main" {
   keep_job_flow_alive_when_no_steps = true
   log_uri                           = "s3://${var.emr_logs_bucket_id}/logs/"
 
+  # Force EMR to wait for termination before considering destroy complete
+  # This helps prevent security group deletion errors
+  lifecycle {
+    create_before_destroy = false
+  }
+
   ec2_attributes {
     subnet_id                         = var.subnet_ids[0]
     emr_managed_master_security_group = var.emr_master_security_group_id

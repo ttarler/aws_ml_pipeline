@@ -212,6 +212,27 @@ docker push <ecr-url>/ml-workload:latest
 aws s3 cp local-data/ s3://<landing-zone-bucket>/raw/ --recursive
 ```
 
+## Destroying Infrastructure
+
+To properly destroy the infrastructure and avoid common errors, follow the cleanup procedure in [docs/CLEANUP_GUIDE.md](docs/CLEANUP_GUIDE.md).
+
+**Quick cleanup:**
+```bash
+# Step 1: Clean up SageMaker apps and spaces first
+./scripts/cleanup-sagemaker.sh us-gov-west-1 $(terraform output -raw sagemaker_domain_id)
+
+# Step 2: Wait for cleanup to complete (apps show Status='Deleted')
+aws sagemaker list-apps --domain-id-equals $(terraform output -raw sagemaker_domain_id) --region us-gov-west-1
+
+# Step 3: Destroy infrastructure
+terraform destroy
+```
+
+**Common destroy errors and solutions:**
+- **SageMaker user profile error**: Run the cleanup script to delete apps and spaces first
+- **EMR security group error**: Wait 3-5 minutes after EMR termination for network interfaces to be released
+- For detailed troubleshooting, see [docs/CLEANUP_GUIDE.md](docs/CLEANUP_GUIDE.md)
+
 ## Configuration Options
 
 ### EMR Spot Instances
