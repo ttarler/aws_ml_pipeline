@@ -22,8 +22,8 @@ enable_nat_gateway = true  # Set to true to allow EMR instances to reach interne
 
 # SageMaker Configuration
 sagemaker_jupyter_instance_type         = "system"
-sagemaker_kernel_gateway_instance_type  = "ml.m5.large"  # GovCloud-compatible instance type
-sagemaker_notebook_instance_type        = "ml.m5.large"  # GovCloud-compatible (alternatives: ml.m5.xlarge, ml.m5.2xlarge)
+sagemaker_kernel_gateway_instance_type  = "ml.m5.xlarge"  # GovCloud-compatible instance type
+sagemaker_notebook_instance_type        = "ml.m5.xlarge"  # GovCloud-compatible (alternatives: ml.m5.xlarge, ml.m5.2xlarge)
 sagemaker_create_notebook_instance      = false  # Set to true for direct EMR access
 sagemaker_enable_feature_store          = false  # Set to true to enable Feature Store
 
