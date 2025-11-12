@@ -152,7 +152,9 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
   direct_internet_access  = "Disabled"
   volume_size             = 50
 
-  lifecycle_config_name = aws_sagemaker_notebook_instance_lifecycle_configuration.emr_setup[0].name
+  # Lifecycle config is optional and only used if EMR DNS is provided
+  # Note: Lifecycle scripts may timeout in private subnets without internet access
+  # lifecycle_config_name = var.create_notebook_instance && var.emr_master_dns != "" ? aws_sagemaker_notebook_instance_lifecycle_configuration.emr_setup[0].name : null
 
   tags = merge(
     var.tags,
@@ -160,26 +162,28 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
       Name = "${var.project_name}-emr-connector-notebook"
     }
   )
+
+  timeouts {
+    create = "30m"
+    update = "20m"
+    delete = "20m"
+  }
 }
 
 # Lifecycle configuration for notebook instance
 resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
-  count = var.create_notebook_instance ? 1 : 0
+  count = var.create_notebook_instance && var.emr_master_dns != "" ? 1 : 0
   name  = "${var.project_name}-emr-setup"
 
   on_start = base64encode(<<-EOF
     #!/bin/bash
     set -e
 
-    # Install required packages for EMR connectivity
+    # Configure EMR connectivity for notebook instance
     sudo -u ec2-user -i <<'USEREOF'
     source /home/ec2-user/anaconda3/bin/activate python3
 
-    # Install Sparkmagic and related packages
-    pip install sparkmagic
-    pip install boto3 --upgrade
-
-    # Configure Sparkmagic
+    # Configure Sparkmagic for EMR connection (if sparkmagic is available)
     mkdir -p ~/.sparkmagic
     cat > ~/.sparkmagic/config.json <<EOL
     {
@@ -188,18 +192,27 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
         "password": "",
         "url": "http://${var.emr_master_dns}:8998",
         "auth": "None"
+      },
+      "kernel_scala_credentials" : {
+        "username": "",
+        "password": "",
+        "url": "http://${var.emr_master_dns}:8998",
+        "auth": "None"
+      },
+      "session_configs" : {
+        "driverMemory": "1000M",
+        "executorCores": 2
       }
     }
     EOL
 
-    # Install Sparkmagic kernels
-    cd $(pip show sparkmagic | grep Location | cut -d' ' -f2)
-    jupyter-kernelspec install sparkmagic/kernels/pysparkkernel --user
+    # Note: Sparkmagic kernels can be installed manually after the notebook starts
+    # This requires internet access which may not be available in private subnets
+
+    echo "EMR configuration complete. EMR endpoint: http://${var.emr_master_dns}:8998"
 
     source /home/ec2-user/anaconda3/bin/deactivate
     USEREOF
-
-    echo "EMR setup complete"
   EOF
   )
 }
