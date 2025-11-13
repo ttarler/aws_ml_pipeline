@@ -49,12 +49,12 @@ output "govcloud_compatible_instance_types" {
 }
 
 output "general_purpose_space_name" {
-  description = "Name of the general purpose CPU space template with R and Spark kernels (via lifecycle config)"
+  description = "Name of the general purpose CPU space template (general-purpose-cpu-template) with R, Spark, and Neptune kernels"
   value       = var.create_space_templates ? aws_sagemaker_space.general_purpose_template[0].space_name : null
 }
 
 output "accelerated_compute_space_name" {
-  description = "Name of the accelerated compute (GPU) space template with R and Spark kernels (via lifecycle config)"
+  description = "Name of the accelerated compute GPU space template (accelerated-compute-gpu-template) with R, Spark, and Neptune kernels"
   value       = var.create_space_templates ? aws_sagemaker_space.accelerated_compute_template[0].space_name : null
 }
 

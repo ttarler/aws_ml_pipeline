@@ -190,23 +190,86 @@ Save these outputs for accessing your infrastructure.
 
 ### 2. Use SageMaker Studio Spaces
 
-SageMaker Studio includes pre-configured spaces with multiple kernels:
+SageMaker Studio includes pre-configured space templates with R kernel support and multiple compute options:
 
-**Available Kernels:**
+**Available Kernels (Automatically Installed):**
 - **Python** (Data Science) - Standard Python with scientific libraries
-- **R** - Statistical computing and data analysis
-- **RSpark** - R with Spark for distributed computing on EMR
+- **R** - Statistical computing and data analysis with IRkernel
+  - Includes: tidyverse, ggplot2, caret, data.table, dplyr, randomForest, xgboost
 - **PySpark** - Python with Spark integration
+- **SparkR** - R with Spark for distributed computing on EMR
 - **Neptune Graph** - Graph database analytics with Gremlin/SPARQL (when Neptune enabled)
 
+**Pre-Configured Space Templates:**
+
+**1. General Purpose CPU Template** (`general-purpose-cpu-template`)
+- **Compute**: CPU-optimized instances
+- **Instance Types**: ml.t3.medium to ml.m5.24xlarge
+- **Image**: SageMaker Distribution (CPU)
+- **Use Cases**: Data analysis, statistical computing, R programming, data preprocessing
+- **Default Instance**: ml.t3.medium (cost-effective for development)
+
+**2. Accelerated Compute GPU Template** (`accelerated-compute-gpu-template`)
+- **Compute**: GPU-accelerated instances
+- **Instance Types**: ml.g4dn.xlarge to ml.p3.16xlarge
+- **Image**: SageMaker Distribution (GPU)
+- **Use Cases**: Deep learning, model training, GPU-accelerated R workloads
+- **Default Instance**: ml.g4dn.xlarge (cost-effective GPU option)
+
 **Creating a Space:**
-1. Navigate to SageMaker Studio in AWS Console
+
+**From SageMaker Studio Console:**
+1. Open SageMaker Studio in AWS Console
 2. Click **Spaces** → **Create space**
-3. Choose a template:
-   - **general-purpose-template** - CPU instances (ml.m5.*, ml.c5.*, ml.t3.*)
-   - **accelerated-compute-template** - GPU instances (ml.g4dn.*, ml.g5.*, ml.p3.*)
-4. Select appropriate instance type for your workload
-5. Launch and start coding
+3. Select your domain: `<project-name>-domain`
+4. Choose a space template:
+   - **general-purpose-cpu-template** - For R, Python, data analysis
+   - **accelerated-compute-gpu-template** - For deep learning, GPU workloads
+5. Name your space (e.g., `r-analytics-workspace`)
+6. **(Optional)** Change instance type from default
+7. Click **Create space**
+8. Click **Run space** to launch JupyterLab
+
+**From AWS CLI:**
+```bash
+# Create a general purpose CPU space
+aws sagemaker create-space \
+    --domain-id <domain-id> \
+    --space-name my-r-workspace \
+    --space-settings file://general-cpu-space-settings.json \
+    --region us-gov-west-1
+
+# Launch the space
+aws sagemaker create-app \
+    --domain-id <domain-id> \
+    --space-name my-r-workspace \
+    --app-type JupyterLab \
+    --app-name default \
+    --region us-gov-west-1
+```
+
+**Using R in SageMaker Studio:**
+
+Once your space is running, R kernel is automatically available in JupyterLab:
+
+```r
+# R kernel is pre-installed with essential packages
+library(tidyverse)
+library(ggplot2)
+
+# Load data from S3
+data <- read.csv("s3://your-bucket/data.csv")
+
+# Perform analysis
+summary <- data %>%
+  group_by(category) %>%
+  summarize(mean_value = mean(value))
+
+# Create visualizations
+ggplot(data, aes(x = category, y = value)) +
+  geom_boxplot() +
+  theme_minimal()
+```
 
 **Using R with Spark on EMR:**
 ```r

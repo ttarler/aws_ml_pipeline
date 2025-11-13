@@ -89,6 +89,20 @@ resource "aws_sagemaker_domain" "main" {
     execution_role  = var.execution_role_arn
     security_groups = [var.security_group_id]
 
+    # JupyterLab settings for spaces (includes R kernel support)
+    jupyter_lab_app_settings {
+      default_resource_spec {
+        instance_type       = "ml.t3.medium"
+        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-cpu"
+      }
+
+      # Enable R kernel and data science tools by default
+      code_repository {
+        repository_url = "https://github.com/aws/sagemaker-distribution.git"
+      }
+    }
+
+    # Kernel Gateway settings for notebook instances
     kernel_gateway_app_settings {
       default_resource_spec {
         instance_type        = var.kernel_gateway_instance_type
@@ -97,6 +111,7 @@ resource "aws_sagemaker_domain" "main" {
       }
     }
 
+    # JupyterServer settings for backward compatibility
     jupyter_server_app_settings {
       default_resource_spec {
         instance_type = var.jupyter_instance_type
@@ -155,14 +170,40 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
     #!/bin/bash
     set -e
 
-    # Install R kernel and packages
-    conda install -y -c conda-forge r-base r-irkernel r-tidyverse r-ggplot2 r-caret
+    echo "=========================================="
+    echo "Installing R Kernel and Data Science Tools"
+    echo "=========================================="
+
+    # Install R kernel and essential packages
+    echo "Installing R base and IRkernel..."
+    conda install -y -c conda-forge \
+      r-base \
+      r-irkernel \
+      r-essentials \
+      r-tidyverse \
+      r-ggplot2 \
+      r-caret \
+      r-data.table \
+      r-dplyr \
+      r-devtools \
+      r-shiny \
+      r-rmarkdown
+
+    # Register R kernel with Jupyter
+    echo "Registering R kernel with Jupyter..."
+    R -e "IRkernel::installspec(user = FALSE, displayname = 'R')"
+
+    # Install additional R packages for machine learning
+    echo "Installing additional R packages..."
+    R -e "install.packages(c('randomForest', 'xgboost', 'mlr3', 'keras'), repos='https://cloud.r-project.org/')"
 
     # Install Spark and PySpark
-    pip install pyspark findspark
+    echo "Installing PySpark..."
+    pip install pyspark findspark py4j
 
     # Install Sparkmagic for EMR connection (if EMR is configured)
     if [ -n "${var.emr_master_dns}" ]; then
+      echo "Configuring Sparkmagic for EMR connection..."
       pip install sparkmagic
 
       # Configure Sparkmagic
@@ -198,16 +239,30 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
 EOL
 
       # Install Sparkmagic kernels
+      echo "Installing Sparkmagic kernels..."
       jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/pysparkkernel
       jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/sparkrkernel
+
+      # Install SparkR kernel
+      R -e "install.packages('SparkR', repos='https://cloud.r-project.org/')"
     fi
 
     # Install Neptune Python libraries (if Neptune is enabled)
     if [ "${var.enable_neptune_kernel}" = "true" ]; then
+      echo "Installing Neptune graph database libraries..."
       pip install gremlinpython SPARQLWrapper neptune-python-utils
     fi
 
-    echo "R, Spark, and Neptune setup complete"
+    # Verify installations
+    echo ""
+    echo "=========================================="
+    echo "Kernel Installation Summary:"
+    echo "=========================================="
+    jupyter kernelspec list
+
+    echo ""
+    echo "✅ R, Spark, and Neptune setup complete!"
+    echo "=========================================="
   EOF
   )
 
@@ -299,67 +354,95 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
 # - Neptune Python libraries (gremlinpython, SPARQLWrapper)
 
 # Space Settings Template for General Purpose CPU Instances
+# This space template includes R kernel support and is optimized for CPU-based workloads
 resource "aws_sagemaker_space" "general_purpose_template" {
   count      = var.create_space_templates ? 1 : 0
   domain_id  = aws_sagemaker_domain.main.id
-  space_name = "general-purpose-template"
+  space_name = "general-purpose-cpu-template"
 
   space_settings {
-    kernel_gateway_app_settings {
+    # JupyterLab app settings (primary interface for spaces)
+    jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type       = "ml.m5.large"
-        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+        instance_type       = "ml.t3.medium"
+        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-cpu"
       }
 
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
+      # Default code repositories for R packages and examples
+      code_repository {
+        repository_url = "https://github.com/aws/sagemaker-distribution.git"
+      }
     }
 
-    jupyter_server_app_settings {
+    # Kernel Gateway settings for R and Spark kernels
+    kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type = "system"
+        instance_type        = "ml.m5.large"
+        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
+
+      # Lifecycle config to install R, Spark, and Neptune kernels
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
   }
 
   tags = merge(
     var.tags,
     {
-      Name        = "${var.project_name}-general-purpose-space"
-      Type        = "GeneralPurpose"
-      Description = "Template for CPU-based workloads with R and RSpark kernels"
+      Name         = "${var.project_name}-general-purpose-cpu-space"
+      Type         = "GeneralPurpose"
+      ComputeType  = "CPU"
+      InstanceType = "ml.t3.medium - ml.m5.24xlarge"
+      Kernels      = "Python, R, PySpark, SparkR, Neptune"
+      Description  = "Template for CPU-based workloads with R, Spark, and Neptune kernels"
     }
   )
 }
 
 # Space Settings Template for Accelerated Compute (GPU) Instances
+# This space template includes R kernel support and is optimized for GPU-based workloads
 resource "aws_sagemaker_space" "accelerated_compute_template" {
   count      = var.create_space_templates ? 1 : 0
   domain_id  = aws_sagemaker_domain.main.id
-  space_name = "accelerated-compute-template"
+  space_name = "accelerated-compute-gpu-template"
 
   space_settings {
-    kernel_gateway_app_settings {
+    # JupyterLab app settings (primary interface for spaces)
+    jupyter_lab_app_settings {
       default_resource_spec {
         instance_type       = "ml.g4dn.xlarge"
-        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-gpu"
       }
 
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
+      # Default code repositories for R packages and examples
+      code_repository {
+        repository_url = "https://github.com/aws/sagemaker-distribution.git"
+      }
     }
 
-    jupyter_server_app_settings {
+    # Kernel Gateway settings for R and Spark kernels with GPU support
+    kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type = "system"
+        instance_type        = "ml.g4dn.xlarge"
+        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
+
+      # Lifecycle config to install R, Spark, and Neptune kernels
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
   }
 
   tags = merge(
     var.tags,
     {
-      Name        = "${var.project_name}-accelerated-compute-space"
-      Type        = "AcceleratedCompute"
-      Description = "Template for GPU-accelerated workloads with R and Spark kernels"
+      Name         = "${var.project_name}-accelerated-compute-gpu-space"
+      Type         = "AcceleratedCompute"
+      ComputeType  = "GPU"
+      InstanceType = "ml.g4dn.xlarge - ml.p3.16xlarge"
+      Kernels      = "Python, R, PySpark, SparkR, Neptune"
+      Description  = "Template for GPU-accelerated workloads with R, Spark, and Neptune kernels"
     }
   )
 }
