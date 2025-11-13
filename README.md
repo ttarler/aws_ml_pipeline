@@ -230,8 +230,20 @@ terraform destroy
 
 **Common destroy errors and solutions:**
 - **SageMaker user profile error**: Run the cleanup script to delete apps and spaces first
+- **Subnet dependency error**: Check for attached network interfaces with `./scripts/check-subnet-dependencies.sh`
 - **EMR security group error**: Wait 3-5 minutes after EMR termination for network interfaces to be released
 - For detailed troubleshooting, see [docs/CLEANUP_GUIDE.md](docs/CLEANUP_GUIDE.md)
+
+**Troubleshooting subnet deletion:**
+```bash
+# Identify what's blocking subnet deletion
+./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
+
+# Destroy compute resources first, then networking
+terraform destroy -target=module.emr -target=module.sagemaker -target=module.ecs
+sleep 300  # Wait for ENIs to be released
+terraform destroy
+```
 
 ## Configuration Options
 

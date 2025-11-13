@@ -29,7 +29,40 @@ aws sagemaker list-apps --domain-id-equals $DOMAIN_ID --region us-gov-west-1
 terraform destroy
 ```
 
-### 2. EMR Security Group Deletion Error
+### 2. Subnet Deletion Error
+
+**Error Message:**
+```
+Error: deleting subnet: DependencyViolation: The subnet has dependencies and cannot be deleted
+```
+
+**Cause:** Network interfaces (ENIs) from EMR, SageMaker, or ECS are still attached to the subnets.
+
+**Solution:** Run the dependency checker script:
+
+```bash
+# Check what's blocking subnet deletion
+./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
+
+# This will show:
+# - All network interfaces in your subnets
+# - What resources (EMR/SageMaker/ECS) own them
+# - Recommended cleanup actions
+```
+
+**Quick Fix:**
+```bash
+# Step 1: Destroy compute resources first
+terraform destroy -target=module.emr -target=module.sagemaker -target=module.ecs
+
+# Step 2: Wait 5 minutes for ENIs to be released
+sleep 300
+
+# Step 3: Retry full destroy
+terraform destroy
+```
+
+### 3. EMR Security Group Deletion Error
 
 **Error Message:**
 ```
@@ -109,8 +142,11 @@ terraform destroy -target=module.emr
 aws emr list-clusters --active --region us-gov-west-1
 ```
 
-### Step 3: Wait for Network Cleanup
+### Step 3: Verify Network Cleanup
 ```bash
+# Check for remaining dependencies
+./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
+
 # Wait 3-5 minutes for network interfaces to be released
 sleep 300
 ```
@@ -119,6 +155,68 @@ sleep 300
 ```bash
 # Now destroy everything else
 terraform destroy
+```
+
+## Troubleshooting Subnet Deletion
+
+### Check What's Blocking Subnets
+
+Run the dependency checker:
+```bash
+./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
+```
+
+This script will show:
+- All network interfaces in your subnets
+- Which resources (EMR/SageMaker/ECS) own them
+- Current status of each ENI
+- Recommended actions
+
+### Common ENI Types
+
+**EMR Network Interfaces:**
+- Description contains "EMR" or "ElasticMapReduce"
+- Solution: Terminate EMR cluster and wait 5 minutes
+- Command: `terraform destroy -target=module.emr`
+
+**SageMaker Network Interfaces:**
+- Description contains "SageMaker"
+- Solution: Stop all SageMaker apps/notebooks
+- Command: `./scripts/cleanup-sagemaker.sh <region> <domain-id>`
+
+**ECS Network Interfaces:**
+- Description contains "ECS" or "Fargate"
+- Solution: Stop all ECS tasks
+- Command: Stop tasks via AWS Console or CLI
+
+### Manual ENI Deletion (Last Resort)
+
+If ENIs are stuck in "available" state:
+
+```bash
+# List all ENIs in VPC
+VPC_ID="vpc-xxxxx"
+aws ec2 describe-network-interfaces \
+  --region us-gov-west-1 \
+  --filters "Name=vpc-id,Values=$VPC_ID" \
+  --query 'NetworkInterfaces[*].[NetworkInterfaceId,Status,Description]' \
+  --output table
+
+# Delete available (unattached) ENI
+aws ec2 delete-network-interface \
+  --network-interface-id eni-xxxxx \
+  --region us-gov-west-1
+
+# For attached ENIs, force detach first
+aws ec2 detach-network-interface \
+  --attachment-id eni-attach-xxxxx \
+  --force \
+  --region us-gov-west-1
+
+# Then delete
+aws ec2 delete-network-interface \
+  --network-interface-id eni-xxxxx \
+  --region us-gov-west-1
 ```
 
 ## Manual Cleanup Commands

@@ -46,6 +46,11 @@ resource "aws_subnet" "private" {
       Type = "Private"
     }
   )
+
+  lifecycle {
+    # Prevent accidental deletion and ensure proper cleanup order
+    create_before_destroy = false
+  }
 }
 
 # Public Subnets (for bastion host)
@@ -63,6 +68,11 @@ resource "aws_subnet" "public" {
       Type = "Public"
     }
   )
+
+  lifecycle {
+    # Prevent accidental deletion and ensure proper cleanup order
+    create_before_destroy = false
+  }
 }
 
 # Internet Gateway
