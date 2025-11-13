@@ -1,6 +1,7 @@
 # S3 Bucket for Landing Zone
 resource "aws_s3_bucket" "landing_zone" {
-  bucket = "${var.project_name}-landing-zone-${var.account_id}"
+  bucket        = "${var.project_name}-landing-zone-${var.account_id}"
+  force_destroy = true
 
   tags = merge(
     var.tags,
@@ -44,7 +45,8 @@ resource "aws_s3_bucket_public_access_block" "landing_zone" {
 
 # S3 Bucket for SageMaker
 resource "aws_s3_bucket" "sagemaker" {
-  bucket = "${var.project_name}-sagemaker-${var.account_id}"
+  bucket        = "${var.project_name}-sagemaker-${var.account_id}"
+  force_destroy = true
 
   tags = merge(
     var.tags,
@@ -88,7 +90,8 @@ resource "aws_s3_bucket_public_access_block" "sagemaker" {
 
 # S3 Bucket for EMR Logs
 resource "aws_s3_bucket" "emr_logs" {
-  bucket = "${var.project_name}-emr-logs-${var.account_id}"
+  bucket        = "${var.project_name}-emr-logs-${var.account_id}"
+  force_destroy = true
 
   tags = merge(
     var.tags,
@@ -150,7 +153,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "emr_logs" {
 
 # S3 Bucket for ECS/Docker artifacts
 resource "aws_s3_bucket" "ecs_artifacts" {
-  bucket = "${var.project_name}-ecs-artifacts-${var.account_id}"
+  bucket        = "${var.project_name}-ecs-artifacts-${var.account_id}"
+  force_destroy = true
 
   tags = merge(
     var.tags,

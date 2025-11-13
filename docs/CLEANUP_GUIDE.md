@@ -6,6 +6,12 @@ This guide explains how to properly destroy the infrastructure to avoid common e
 
 The infrastructure includes several automatic cleanup mechanisms to ensure smooth destruction:
 
+### ✅ S3 Bucket Cleanup
+- **What**: All S3 buckets are automatically emptied and deleted during destroy
+- **How**: `force_destroy = true` attribute on all bucket resources
+- **Buckets**: Landing zone, SageMaker, EMR logs, ECS artifacts
+- **Benefit**: No manual bucket cleanup required; prevents "BucketNotEmpty" errors
+
 ### ✅ Route Table Cleanup
 - **What**: Route tables and their associations are automatically deleted before the VPC
 - **How**: Lifecycle rules and dependency coordination ensure proper destroy order
@@ -25,11 +31,16 @@ The infrastructure includes several automatic cleanup mechanisms to ensure smoot
 ```
 Terraform Destroy Order (Automatic):
 1. Compute Resources (SageMaker, EMR, ECS, Neptune)
-2. EFS Mount Targets (via cleanup script)
-3. VPC Resource Cleanup Coordinator (null_resource)
-4. NAT Gateway
-5. Internet Gateway
-6. Security Groups (all 8 security groups)
+2. S3 Buckets (automatically emptied, then deleted)
+   - Landing Zone bucket
+   - SageMaker bucket
+   - EMR Logs bucket
+   - ECS Artifacts bucket
+3. EFS Mount Targets (via cleanup script)
+4. VPC Resource Cleanup Coordinator (null_resource)
+5. NAT Gateway
+6. Internet Gateway
+7. Security Groups (all 8 security groups)
    - VPC Endpoints SG
    - SageMaker SG
    - EMR Master SG
@@ -38,11 +49,11 @@ Terraform Destroy Order (Automatic):
    - ECS SG
    - Neptune SG
    - Bastion SG
-7. Route Table Associations
-8. Route Tables
-9. Routes
-10. Subnets
-11. VPC (deleted last)
+8. Route Table Associations
+9. Route Tables
+10. Routes
+11. Subnets
+12. VPC (deleted last)
 ```
 
 ## Common Destroy Errors
@@ -428,3 +439,12 @@ If you continue to experience issues:
 2. Review AWS Console for resources that didn't get deleted
 3. Use `terraform state list` to see what resources Terraform is tracking
 4. Consider using `terraform state rm` for stuck resources (then manually delete)
+
+## Related Documentation
+
+For detailed information about specific automatic cleanup mechanisms:
+
+- **[S3 Bucket Cleanup](S3_BUCKET_CLEANUP.md)** - Automatic S3 bucket emptying and deletion with `force_destroy`
+- **[EFS Cleanup](EFS_CLEANUP.md)** - Automatic EFS mount target deletion before subnets
+- **[VPC Resource Cleanup](ROUTE_TABLE_CLEANUP.md)** - Automatic cleanup of route tables, security groups, and gateways before VPC deletion
+- **[Main README](../README.md)** - General infrastructure overview and usage

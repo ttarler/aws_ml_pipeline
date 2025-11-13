@@ -357,7 +357,9 @@ terraform destroy
 ```
 
 **Automatic Cleanup Features:**
+- ✅ **S3 Buckets**: All buckets (landing zone, SageMaker, EMR logs, ECS artifacts) are automatically emptied and deleted
 - ✅ **EFS Mount Targets**: Automatically deleted before subnets during `terraform destroy`
+- ✅ **Route Tables & Security Groups**: Automatically deleted in proper order before VPC
 - ⚠️ **SageMaker Apps**: Must be manually cleaned up with the cleanup script before destroy
 
 **Common destroy errors and solutions:**
