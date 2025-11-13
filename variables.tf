@@ -125,6 +125,37 @@ variable "sagemaker_notebook_direct_internet_access" {
   }
 }
 
+# Neptune Variables
+variable "enable_neptune" {
+  description = "Whether to create Neptune graph database cluster"
+  type        = bool
+  default     = false
+}
+
+variable "neptune_instance_class" {
+  description = "Instance class for Neptune (e.g., db.r5.large, db.r5.xlarge)"
+  type        = string
+  default     = "db.r5.large"
+}
+
+variable "neptune_instance_count" {
+  description = "Number of Neptune instances to create"
+  type        = number
+  default     = 1
+}
+
+variable "neptune_backup_retention_period" {
+  description = "Neptune backup retention period in days"
+  type        = number
+  default     = 7
+}
+
+variable "neptune_skip_final_snapshot" {
+  description = "Skip final snapshot on Neptune cluster deletion"
+  type        = bool
+  default     = false
+}
+
 # EMR Variables
 variable "enable_emr" {
   description = "Whether to create EMR cluster"

@@ -68,6 +68,11 @@ output "bastion_security_group_id" {
   value       = var.enable_bastion ? aws_security_group.bastion[0].id : null
 }
 
+output "neptune_security_group_id" {
+  description = "Security group ID for Neptune"
+  value       = aws_security_group.neptune.id
+}
+
 output "nat_gateway_id" {
   description = "ID of NAT Gateway"
   value       = var.enable_nat_gateway && length(var.public_subnet_cidrs) > 0 ? aws_nat_gateway.main[0].id : null

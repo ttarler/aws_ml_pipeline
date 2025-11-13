@@ -29,6 +29,13 @@ sagemaker_create_notebook_instance      = false  # Set to true for direct EMR ac
 sagemaker_enable_feature_store          = false  # Set to true to enable Feature Store
 sagemaker_create_space_templates        = true   # Create space templates with R and RSpark kernels for general purpose and accelerated compute
 
+# Neptune Configuration (Graph Database)
+enable_neptune                    = false  # Set to true to create Neptune graph database cluster
+neptune_instance_class            = "db.r5.large"   # GovCloud-compatible Neptune instance (alternatives: db.r5.xlarge, db.r5.2xlarge, db.r5.4xlarge)
+neptune_instance_count            = 1       # Number of Neptune instances (for high availability, use 2+)
+neptune_backup_retention_period   = 7       # Backup retention in days
+neptune_skip_final_snapshot       = false   # Set to true to skip final snapshot on destroy (NOT recommended for production)
+
 # EMR Configuration
 enable_emr                       = true
 emr_release_label                = "emr-7.10.0"

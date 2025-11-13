@@ -832,6 +832,81 @@ resource "aws_security_group" "ecs" {
   )
 }
 
+# Security Group for Neptune
+resource "aws_security_group" "neptune" {
+  name_prefix = "${var.project_name}-neptune-sg"
+  description = "Security group for Neptune graph database"
+  vpc_id      = aws_vpc.main.id
+
+  # Revoke all rules before deleting to speed up cleanup
+  revoke_rules_on_delete = true
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  # Allow access from SageMaker
+  ingress {
+    from_port       = 8182
+    to_port         = 8182
+    protocol        = "tcp"
+    security_groups = [aws_security_group.sagemaker.id]
+    description     = "Gremlin/SPARQL from SageMaker"
+  }
+
+  # Allow access from EMR master
+  ingress {
+    from_port       = 8182
+    to_port         = 8182
+    protocol        = "tcp"
+    security_groups = [aws_security_group.emr_master.id]
+    description     = "Gremlin/SPARQL from EMR master"
+  }
+
+  # Allow access from EMR slaves
+  ingress {
+    from_port       = 8182
+    to_port         = 8182
+    protocol        = "tcp"
+    security_groups = [aws_security_group.emr_slave.id]
+    description     = "Gremlin/SPARQL from EMR slaves"
+  }
+
+  # Allow self-communication
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    self        = true
+    description = "Allow all TCP traffic within security group"
+  }
+
+  # Allow all outbound within VPC
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.vpc_cidr]
+    description = "Allow all outbound within VPC"
+  }
+
+  # Allow HTTPS to VPC endpoints
+  egress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.vpc_endpoints.id]
+    description     = "HTTPS to VPC endpoints"
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-neptune-sg"
+    }
+  )
+}
+
 # Bastion Host Security Group
 resource "aws_security_group" "bastion" {
   count       = var.enable_bastion ? 1 : 0

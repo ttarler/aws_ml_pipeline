@@ -5,6 +5,7 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - **Amazon SageMaker** with Studio and domain configuration
 - **Amazon EMR** with spot instance support for distributed data processing
 - **Amazon ECS** for containerized workloads
+- **AWS Neptune** graph database with SageMaker and EMR connectivity
 - **Private VPC** with optional NAT Gateway for secure internet access
 - **S3 Landing Zone** for data storage
 
@@ -66,7 +67,15 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - Optional Feature Store for ML feature management
 - Optional Notebook instances with configurable internet access (via NAT Gateway or direct)
 
-### 3. Amazon EMR
+### 3. AWS Neptune
+- Fully managed graph database (Property Graph and RDF)
+- Connectivity from SageMaker for graph analytics and ML
+- Connectivity from EMR for distributed graph processing
+- IAM database authentication enabled
+- Automated backups with configurable retention
+- Encryption at rest and in transit
+
+### 4. Amazon EMR
 - Base EMR cluster with configurable instance types
 - Support for spot instances on task nodes for cost optimization
 - Auto-scaling configuration for dynamic workload management
@@ -74,14 +83,14 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - Bootstrap scripts for SageMaker integration
 - S3 integration for data access in landing zone
 
-### 4. Amazon ECS
+### 5. Amazon ECS
 - ECS Cluster with Fargate support
 - ECR repositories for Docker images
 - Sample task definitions and services
 - Secrets Manager for credential management
 - Optional scheduled tasks for recurring workloads
 
-### 5. S3 Storage
+### 6. S3 Storage
 - Landing zone bucket for raw and processed data
 - SageMaker bucket for model artifacts
 - EMR logs bucket with lifecycle policies
@@ -188,6 +197,7 @@ SageMaker Studio includes pre-configured spaces with multiple kernels:
 - **R** - Statistical computing and data analysis
 - **RSpark** - R with Spark for distributed computing on EMR
 - **PySpark** - Python with Spark integration
+- **Neptune Graph** - Graph database analytics with Gremlin/SPARQL (when Neptune enabled)
 
 **Creating a Space:**
 1. Navigate to SageMaker Studio in AWS Console
@@ -218,7 +228,35 @@ local_data <- collect(result)
 
 For detailed usage, see [SageMaker Spaces with R and RSpark Kernels](docs/SAGEMAKER_SPACES_KERNELS.md)
 
-### 3. Push Docker Images to ECR
+### 3. Use Neptune Graph Database (Optional)
+
+If Neptune is enabled, you can perform graph analytics:
+
+**Using Gremlin (Property Graph):**
+```python
+from gremlin_python import statics
+from gremlin_python.structure.graph import Graph
+from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+
+# Connect to Neptune
+neptune_endpoint = "terraform output neptune_cluster_endpoint"
+graph = Graph()
+connection = DriverRemoteConnection(f'wss://{neptune_endpoint}:8182/gremlin', 'g')
+g = graph.traversal().withRemote(connection)
+
+# Create graph
+g.addV('person').property('name', 'Alice').next()
+g.addV('person').property('name', 'Bob').next()
+g.V().has('person', 'name', 'Alice').addE('knows').to(V().has('person', 'name', 'Bob')).iterate()
+
+# Query graph
+results = g.V().hasLabel('person').values('name').toList()
+print(results)
+```
+
+For comprehensive Neptune usage, see [Neptune Setup Guide](docs/NEPTUNE_SETUP.md)
+
+### 4. Push Docker Images to ECR
 
 ```bash
 # Get ECR login
@@ -319,6 +357,41 @@ ml.p3.2xlarge, ml.p3.8xlarge, ml.p3.16xlarge
 ```
 
 See [docs/SAGEMAKER_SPACES_KERNELS.md](docs/SAGEMAKER_SPACES_KERNELS.md) for detailed usage guide.
+
+### Neptune Graph Database
+
+Enable Neptune for graph analytics workloads:
+
+```hcl
+enable_neptune                  = true
+neptune_instance_class          = "db.r5.large"
+neptune_instance_count          = 1  # Use 2+ for high availability
+neptune_backup_retention_period = 7
+```
+
+**Supported Graph Models:**
+- **Property Graph** with Gremlin
+- **RDF** with SPARQL
+
+**Use Cases:**
+- Social network analysis
+- Fraud detection
+- Knowledge graphs
+- Recommendation engines
+- Network and IT operations
+
+**Instance Types:**
+```hcl
+# Development
+db.r5.large (2 vCPU, 16 GB RAM)
+
+# Production
+db.r5.xlarge (4 vCPU, 32 GB RAM)
+db.r5.2xlarge (8 vCPU, 64 GB RAM)
+db.r5.4xlarge (16 vCPU, 128 GB RAM)
+```
+
+See [docs/NEPTUNE_SETUP.md](docs/NEPTUNE_SETUP.md) for complete Neptune guide.
 
 ### ECS Scheduled Tasks
 

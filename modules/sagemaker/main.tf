@@ -335,6 +335,32 @@ resource "aws_sagemaker_app_image_config" "rspark_kernel" {
   )
 }
 
+# App Image Config for Neptune Graph Notebook Kernel
+resource "aws_sagemaker_app_image_config" "neptune_graph" {
+  count                 = var.enable_neptune_kernel ? 1 : 0
+  app_image_config_name = "${var.project_name}-neptune-graph-config"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      name         = "python3"
+      display_name = "Neptune Graph (Python 3)"
+    }
+
+    file_system_config {
+      default_gid = 100
+      default_uid = 1000
+      mount_path  = "/root"
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-neptune-graph-config"
+    }
+  )
+}
+
 # Space Settings Template for General Purpose CPU Instances
 resource "aws_sagemaker_space" "general_purpose_template" {
   count      = var.create_space_templates ? 1 : 0
@@ -357,6 +383,14 @@ resource "aws_sagemaker_space" "general_purpose_template" {
       custom_image {
         image_name            = "rspark-kernel"
         app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+      }
+
+      dynamic "custom_image" {
+        for_each = var.enable_neptune_kernel ? [1] : []
+        content {
+          image_name            = "neptune-graph"
+          app_image_config_name = aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name
+        }
       }
 
       lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]
@@ -401,6 +435,14 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
       custom_image {
         image_name            = "rspark-kernel"
         app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+      }
+
+      dynamic "custom_image" {
+        for_each = var.enable_neptune_kernel ? [1] : []
+        content {
+          image_name            = "neptune-graph"
+          app_image_config_name = aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name
+        }
       }
 
       lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]

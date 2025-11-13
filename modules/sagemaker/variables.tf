@@ -79,6 +79,18 @@ variable "create_space_templates" {
   default     = true
 }
 
+variable "enable_neptune_kernel" {
+  description = "Whether to enable Neptune graph notebook kernel"
+  type        = bool
+  default     = false
+}
+
+variable "neptune_endpoint" {
+  description = "Neptune cluster endpoint for graph database connectivity"
+  type        = string
+  default     = ""
+}
+
 variable "emr_master_dns" {
   description = "DNS name of EMR master node"
   type        = string

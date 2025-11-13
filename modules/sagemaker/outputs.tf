@@ -68,6 +68,11 @@ output "rspark_kernel_config_name" {
   value       = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
 }
 
+output "neptune_graph_kernel_config_name" {
+  description = "Name of the Neptune graph notebook kernel app image config"
+  value       = var.enable_neptune_kernel ? aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name : null
+}
+
 output "general_purpose_instance_types" {
   description = "List of general purpose CPU instance types for spaces"
   value       = local.general_purpose_instances

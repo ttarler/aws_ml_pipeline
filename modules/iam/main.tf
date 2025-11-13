@@ -119,6 +119,13 @@ resource "aws_iam_role_policy" "sagemaker_execution" {
           "ec2:DescribeSecurityGroups"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "neptune-db:*"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -282,6 +289,13 @@ resource "aws_iam_role_policy" "sagemaker_studio_user" {
           "sagemaker:ListApps",
           "sagemaker:ListDomains",
           "sagemaker:ListUserProfiles"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "neptune-db:*"
         ]
         Resource = "*"
       }

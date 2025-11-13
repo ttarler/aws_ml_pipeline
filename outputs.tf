@@ -153,6 +153,27 @@ output "emr_log_uri" {
   value       = var.enable_emr ? module.emr[0].log_uri : null
 }
 
+# Neptune Outputs
+output "neptune_cluster_endpoint" {
+  description = "Neptune cluster endpoint for Gremlin/SPARQL connections"
+  value       = var.enable_neptune ? module.neptune[0].cluster_endpoint : null
+}
+
+output "neptune_cluster_reader_endpoint" {
+  description = "Neptune cluster reader endpoint"
+  value       = var.enable_neptune ? module.neptune[0].cluster_reader_endpoint : null
+}
+
+output "neptune_cluster_id" {
+  description = "Neptune cluster identifier"
+  value       = var.enable_neptune ? module.neptune[0].cluster_id : null
+}
+
+output "neptune_cluster_port" {
+  description = "Neptune cluster port (default 8182)"
+  value       = var.enable_neptune ? module.neptune[0].cluster_port : null
+}
+
 # ECS Outputs
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"

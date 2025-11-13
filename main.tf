@@ -107,11 +107,31 @@ module "sagemaker" {
   create_notebook_instance        = var.sagemaker_create_notebook_instance
   enable_feature_store            = var.sagemaker_enable_feature_store
   create_space_templates          = var.sagemaker_create_space_templates
+  enable_neptune_kernel           = var.enable_neptune
+  neptune_endpoint                = var.enable_neptune ? module.neptune[0].cluster_endpoint : ""
   emr_master_dns                  = var.enable_emr ? module.emr[0].master_public_dns : ""
 
   tags = var.tags
 
   depends_on = [module.iam]
+}
+
+# Neptune Module
+module "neptune" {
+  count  = var.enable_neptune ? 1 : 0
+  source = "./modules/neptune"
+
+  project_name              = var.project_name
+  subnet_ids                = module.networking.private_subnet_ids
+  neptune_security_group_id = module.networking.neptune_security_group_id
+  instance_class            = var.neptune_instance_class
+  instance_count            = var.neptune_instance_count
+  backup_retention_period   = var.neptune_backup_retention_period
+  skip_final_snapshot       = var.neptune_skip_final_snapshot
+
+  tags = var.tags
+
+  depends_on = [module.networking]
 }
 
 # EMR Module
