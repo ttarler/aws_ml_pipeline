@@ -106,6 +106,7 @@ module "sagemaker" {
   notebook_direct_internet_access = var.sagemaker_notebook_direct_internet_access
   create_notebook_instance        = var.sagemaker_create_notebook_instance
   enable_feature_store            = var.sagemaker_enable_feature_store
+  create_space_templates          = var.sagemaker_create_space_templates
   emr_master_dns                  = var.enable_emr ? module.emr[0].master_public_dns : ""
 
   tags = var.tags

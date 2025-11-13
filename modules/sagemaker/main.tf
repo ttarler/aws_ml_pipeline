@@ -1,3 +1,6 @@
+# Data source for current region
+data "aws_region" "current" {}
+
 # Local variables for instance type validation
 locals {
   # Common SageMaker instance types available in AWS GovCloud
@@ -12,6 +15,44 @@ locals {
     "ml.c5.large",
     "ml.c5.xlarge",
     "ml.c5.2xlarge"
+  ]
+
+  # General purpose CPU instances for spaces
+  general_purpose_instances = [
+    "ml.t3.medium",
+    "ml.t3.large",
+    "ml.t3.xlarge",
+    "ml.t3.2xlarge",
+    "ml.m5.large",
+    "ml.m5.xlarge",
+    "ml.m5.2xlarge",
+    "ml.m5.4xlarge",
+    "ml.m5.8xlarge",
+    "ml.m5.12xlarge",
+    "ml.c5.large",
+    "ml.c5.xlarge",
+    "ml.c5.2xlarge",
+    "ml.c5.4xlarge",
+    "ml.c5.9xlarge"
+  ]
+
+  # Accelerated compute (GPU) instances for spaces
+  accelerated_compute_instances = [
+    "ml.g4dn.xlarge",
+    "ml.g4dn.2xlarge",
+    "ml.g4dn.4xlarge",
+    "ml.g4dn.8xlarge",
+    "ml.g4dn.12xlarge",
+    "ml.g4dn.16xlarge",
+    "ml.g5.xlarge",
+    "ml.g5.2xlarge",
+    "ml.g5.4xlarge",
+    "ml.g5.8xlarge",
+    "ml.g5.12xlarge",
+    "ml.g5.16xlarge",
+    "ml.p3.2xlarge",
+    "ml.p3.8xlarge",
+    "ml.p3.16xlarge"
   ]
 }
 
@@ -47,6 +88,31 @@ resource "aws_sagemaker_domain" "main" {
   default_space_settings {
     execution_role  = var.execution_role_arn
     security_groups = [var.security_group_id]
+
+    kernel_gateway_app_settings {
+      default_resource_spec {
+        instance_type        = var.kernel_gateway_instance_type
+        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.emr_connection.arn
+      }
+
+      # Custom image configurations for R and RSpark
+      custom_image {
+        image_name            = "r-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
+      }
+
+      custom_image {
+        image_name            = "rspark-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+      }
+    }
+
+    jupyter_server_app_settings {
+      default_resource_spec {
+        instance_type = var.jupyter_instance_type
+      }
+    }
   }
 
   tags = merge(
@@ -216,6 +282,144 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
     source /home/ec2-user/anaconda3/bin/deactivate
     USEREOF
   EOF
+  )
+}
+
+# App Image Config for R Kernel
+resource "aws_sagemaker_app_image_config" "r_kernel" {
+  app_image_config_name = "${var.project_name}-r-kernel-config"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      name         = "ir"
+      display_name = "R"
+    }
+
+    file_system_config {
+      default_gid = 100
+      default_uid = 1000
+      mount_path  = "/root"
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-r-kernel-config"
+    }
+  )
+}
+
+# App Image Config for RSpark Kernel
+resource "aws_sagemaker_app_image_config" "rspark_kernel" {
+  app_image_config_name = "${var.project_name}-rspark-kernel-config"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      name         = "sparkr"
+      display_name = "R with Spark"
+    }
+
+    file_system_config {
+      default_gid = 100
+      default_uid = 1000
+      mount_path  = "/root"
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-rspark-kernel-config"
+    }
+  )
+}
+
+# Space Settings Template for General Purpose CPU Instances
+resource "aws_sagemaker_space" "general_purpose_template" {
+  count      = var.create_space_templates ? 1 : 0
+  domain_id  = aws_sagemaker_domain.main.id
+  space_name = "general-purpose-template"
+
+  space_settings {
+    kernel_gateway_app_settings {
+      default_resource_spec {
+        instance_type       = "ml.m5.large"
+        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+      }
+
+      # Include all custom kernels
+      custom_image {
+        image_name            = "r-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
+      }
+
+      custom_image {
+        image_name            = "rspark-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+      }
+
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]
+    }
+
+    jupyter_server_app_settings {
+      default_resource_spec {
+        instance_type = "system"
+      }
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-general-purpose-space"
+      Type        = "GeneralPurpose"
+      Description = "Template for CPU-based workloads with R and RSpark kernels"
+    }
+  )
+}
+
+# Space Settings Template for Accelerated Compute (GPU) Instances
+resource "aws_sagemaker_space" "accelerated_compute_template" {
+  count      = var.create_space_templates ? 1 : 0
+  domain_id  = aws_sagemaker_domain.main.id
+  space_name = "accelerated-compute-template"
+
+  space_settings {
+    kernel_gateway_app_settings {
+      default_resource_spec {
+        instance_type       = "ml.g4dn.xlarge"
+        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
+      }
+
+      # Include all custom kernels
+      custom_image {
+        image_name            = "r-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
+      }
+
+      custom_image {
+        image_name            = "rspark-kernel"
+        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+      }
+
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]
+    }
+
+    jupyter_server_app_settings {
+      default_resource_spec {
+        instance_type = "system"
+      }
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-accelerated-compute-space"
+      Type        = "AcceleratedCompute"
+      Description = "Template for GPU-accelerated workloads with R and RSpark kernels"
+    }
   )
 }
 

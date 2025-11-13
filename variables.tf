@@ -109,6 +109,12 @@ variable "sagemaker_enable_feature_store" {
   default     = false
 }
 
+variable "sagemaker_create_space_templates" {
+  description = "Whether to create SageMaker Space templates with R and RSpark kernels for general purpose and accelerated compute"
+  type        = bool
+  default     = true
+}
+
 variable "sagemaker_notebook_direct_internet_access" {
   description = "Whether to enable direct internet access for SageMaker notebook instance (Enabled = public subnet with public IP, Disabled = private subnet with NAT Gateway)"
   type        = string

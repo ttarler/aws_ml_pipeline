@@ -27,6 +27,7 @@ sagemaker_notebook_instance_type        = "ml.m5.xlarge"  # GovCloud-compatible 
 sagemaker_notebook_direct_internet_access = "Disabled"  # Disabled = private subnet with NAT Gateway (recommended), Enabled = public subnet with direct internet
 sagemaker_create_notebook_instance      = false  # Set to true for direct EMR access
 sagemaker_enable_feature_store          = false  # Set to true to enable Feature Store
+sagemaker_create_space_templates        = true   # Create space templates with R and RSpark kernels for general purpose and accelerated compute
 
 # EMR Configuration
 enable_emr                       = true

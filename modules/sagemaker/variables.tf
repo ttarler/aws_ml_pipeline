@@ -73,6 +73,12 @@ variable "enable_feature_store" {
   default     = false
 }
 
+variable "create_space_templates" {
+  description = "Whether to create SageMaker Space templates for general purpose and accelerated compute"
+  type        = bool
+  default     = true
+}
+
 variable "emr_master_dns" {
   description = "DNS name of EMR master node"
   type        = string

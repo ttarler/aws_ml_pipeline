@@ -47,3 +47,33 @@ output "govcloud_compatible_instance_types" {
   description = "List of SageMaker instance types commonly available in AWS GovCloud"
   value       = local.govcloud_compatible_notebook_types
 }
+
+output "general_purpose_space_name" {
+  description = "Name of the general purpose CPU space template"
+  value       = var.create_space_templates ? aws_sagemaker_space.general_purpose_template[0].space_name : null
+}
+
+output "accelerated_compute_space_name" {
+  description = "Name of the accelerated compute (GPU) space template"
+  value       = var.create_space_templates ? aws_sagemaker_space.accelerated_compute_template[0].space_name : null
+}
+
+output "r_kernel_config_name" {
+  description = "Name of the R kernel app image config"
+  value       = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
+}
+
+output "rspark_kernel_config_name" {
+  description = "Name of the RSpark kernel app image config"
+  value       = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+}
+
+output "general_purpose_instance_types" {
+  description = "List of general purpose CPU instance types for spaces"
+  value       = local.general_purpose_instances
+}
+
+output "accelerated_compute_instance_types" {
+  description = "List of accelerated compute (GPU) instance types for spaces"
+  value       = local.accelerated_compute_instances
+}

@@ -59,6 +59,8 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 ### 2. Amazon SageMaker
 - SageMaker Domain and Studio setup
 - Pre-configured for EMR connectivity via Livy/SparkMagic
+- **Space templates with R and RSpark kernels** for statistical computing and distributed R workloads
+- **Support for both general purpose CPU and accelerated compute (GPU) instances**
 - User profiles with appropriate IAM roles
 - Model Registry for versioning
 - Optional Feature Store for ML feature management
@@ -177,19 +179,44 @@ Save these outputs for accessing your infrastructure.
 3. Create a new user profile or use the default profile
 4. Launch Studio
 
-### 2. Connect SageMaker to EMR
+### 2. Use SageMaker Studio Spaces
 
-The infrastructure includes lifecycle configurations for EMR connectivity. To use EMR from SageMaker:
+SageMaker Studio includes pre-configured spaces with multiple kernels:
 
-1. In SageMaker Studio, open a notebook
-2. The SparkMagic kernel should be available
-3. Connect to EMR using the master node DNS from outputs
+**Available Kernels:**
+- **Python** (Data Science) - Standard Python with scientific libraries
+- **R** - Statistical computing and data analysis
+- **RSpark** - R with Spark for distributed computing on EMR
+- **PySpark** - Python with Spark integration
 
-Example notebook cell:
-```python
-%%spark
-sc.version  # This will connect to EMR and show Spark version
+**Creating a Space:**
+1. Navigate to SageMaker Studio in AWS Console
+2. Click **Spaces** → **Create space**
+3. Choose a template:
+   - **general-purpose-template** - CPU instances (ml.m5.*, ml.c5.*, ml.t3.*)
+   - **accelerated-compute-template** - GPU instances (ml.g4dn.*, ml.g5.*, ml.p3.*)
+4. Select appropriate instance type for your workload
+5. Launch and start coding
+
+**Using R with Spark on EMR:**
+```r
+library(SparkR)
+
+# Read data from S3 using Spark
+df <- read.df("s3://your-bucket/data/dataset.csv",
+              source = "csv", header = "true")
+
+# Distributed processing
+result <- df %>%
+  filter(df$value > 100) %>%
+  groupBy(df$category) %>%
+  agg(avg(df$amount))
+
+# Collect to local R dataframe
+local_data <- collect(result)
 ```
+
+For detailed usage, see [SageMaker Spaces with R and RSpark Kernels](docs/SAGEMAKER_SPACES_KERNELS.md)
 
 ### 3. Push Docker Images to ECR
 
@@ -261,6 +288,37 @@ Optional SageMaker features can be enabled:
 
 - **Feature Store**: Set `sagemaker_enable_feature_store = true`
 - **Notebook Instance**: Set `sagemaker_create_notebook_instance = true`
+- **Space Templates**: Set `sagemaker_create_space_templates = true` (default)
+  - Creates templates with R and RSpark kernels
+  - Supports both CPU (general purpose) and GPU (accelerated compute) instances
+
+**Available Space Instance Types:**
+
+General Purpose (CPU):
+```hcl
+# Light development
+ml.t3.medium, ml.t3.large, ml.t3.xlarge
+
+# Standard workloads
+ml.m5.large, ml.m5.xlarge, ml.m5.2xlarge, ml.m5.4xlarge
+
+# Compute optimized
+ml.c5.large, ml.c5.xlarge, ml.c5.2xlarge
+```
+
+Accelerated Compute (GPU):
+```hcl
+# Development/Testing
+ml.g4dn.xlarge, ml.g4dn.2xlarge
+
+# Production Training
+ml.g5.xlarge, ml.g5.2xlarge, ml.g5.4xlarge
+
+# Large-scale Deep Learning
+ml.p3.2xlarge, ml.p3.8xlarge, ml.p3.16xlarge
+```
+
+See [docs/SAGEMAKER_SPACES_KERNELS.md](docs/SAGEMAKER_SPACES_KERNELS.md) for detailed usage guide.
 
 ### ECS Scheduled Tasks
 
