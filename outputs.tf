@@ -112,11 +112,6 @@ output "sagemaker_general_purpose_space" {
   value       = module.sagemaker.general_purpose_space_name
 }
 
-output "sagemaker_accelerated_compute_space" {
-  description = "Name of the accelerated compute (GPU) space template with R and Spark kernels installed via lifecycle config"
-  value       = module.sagemaker.accelerated_compute_space_name
-}
-
 output "sagemaker_lifecycle_config" {
   description = "Name of the lifecycle configuration that installs R, Spark, and Neptune kernels"
   value       = module.sagemaker.lifecycle_config_name

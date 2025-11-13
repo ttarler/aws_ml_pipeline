@@ -53,11 +53,6 @@ output "general_purpose_space_name" {
   value       = var.create_space_templates ? aws_sagemaker_space.general_purpose_template[0].space_name : null
 }
 
-output "accelerated_compute_space_name" {
-  description = "Name of the accelerated compute GPU space template (accelerated-compute-gpu-template) with R, Spark, and Neptune kernels"
-  value       = var.create_space_templates ? aws_sagemaker_space.accelerated_compute_template[0].space_name : null
-}
-
 output "lifecycle_config_name" {
   description = "Name of the lifecycle config that installs R, Spark, and Neptune kernels"
   value       = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.studio_lifecycle_config_name
@@ -66,11 +61,6 @@ output "lifecycle_config_name" {
 output "general_purpose_instance_types" {
   description = "List of general purpose CPU instance types for spaces"
   value       = local.general_purpose_instances
-}
-
-output "accelerated_compute_instance_types" {
-  description = "List of accelerated compute (GPU) instance types for spaces"
-  value       = local.accelerated_compute_instances
 }
 
 # ECR Repository Outputs

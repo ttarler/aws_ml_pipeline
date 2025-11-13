@@ -142,25 +142,6 @@ locals {
     "ml.c5.4xlarge",
     "ml.c5.9xlarge"
   ]
-
-  # Accelerated compute (GPU) instances for spaces
-  accelerated_compute_instances = [
-    "ml.g4dn.xlarge",
-    "ml.g4dn.2xlarge",
-    "ml.g4dn.4xlarge",
-    "ml.g4dn.8xlarge",
-    "ml.g4dn.12xlarge",
-    "ml.g4dn.16xlarge",
-    "ml.g5.xlarge",
-    "ml.g5.2xlarge",
-    "ml.g5.4xlarge",
-    "ml.g5.8xlarge",
-    "ml.g5.12xlarge",
-    "ml.g5.16xlarge",
-    "ml.p3.2xlarge",
-    "ml.p3.8xlarge",
-    "ml.p3.16xlarge"
-  ]
 }
 
 # SageMaker Domain
@@ -646,60 +627,6 @@ resource "aws_sagemaker_space" "general_purpose_template" {
   )
 }
 
-# Space Settings Template for Accelerated Compute (GPU) Instances
-# This space template includes R kernel support and is optimized for GPU-based workloads
-resource "aws_sagemaker_space" "accelerated_compute_template" {
-  count      = var.create_space_templates ? 1 : 0
-  domain_id  = aws_sagemaker_domain.main.id
-  space_name = "accelerated-compute-gpu-template"
-
-  space_settings {
-    # JupyterLab app settings (primary interface for spaces)
-    # Using default SageMaker Studio images (no custom image ARN needed)
-    jupyter_lab_app_settings {
-      default_resource_spec {
-        instance_type = "ml.g4dn.xlarge"
-      }
-
-      # Default code repositories for R packages and examples
-      code_repository {
-        repository_url = "https://github.com/aws/sagemaker-distribution.git"
-      }
-    }
-
-    # Kernel Gateway settings for R and Spark kernels with GPU support
-    # Uses custom ECR image with R kernel support
-    kernel_gateway_app_settings {
-      default_resource_spec {
-        instance_type               = "ml.g4dn.xlarge"
-        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
-        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
-        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
-      }
-
-      # Use custom image for R kernel
-      custom_image {
-        image_name            = aws_sagemaker_image.datascience_r.id
-        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
-      }
-
-      # Lifecycle config to install R, Spark, and Neptune kernels
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
-    }
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name         = "${var.project_name}-accelerated-compute-gpu-space"
-      Type         = "AcceleratedCompute"
-      ComputeType  = "GPU"
-      InstanceType = "ml.g4dn.xlarge - ml.p3.16xlarge"
-      Kernels      = "Python, R, PySpark, SparkR, Neptune"
-      Description  = "Template for GPU-accelerated workloads with R, Spark, and Neptune kernels"
-    }
-  )
-}
 
 # SageMaker Feature Store (optional - for ML feature management)
 resource "aws_sagemaker_feature_group" "ml_features" {
