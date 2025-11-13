@@ -5,6 +5,7 @@ project_name = "govcloud-ml-platform"
 environment  = "dev"
 aws_region   = "us-gov-west-1"  # or us-gov-east-1
 aws_partition = "aws-us-gov"     # use "aws-us-gov" for GovCloud, "aws" for commercial
+account_id   = "123456789012"   # Your AWS account ID (12 digits)
 
 # Networking Configuration
 vpc_cidr             = "10.0.0.0/16"
@@ -78,3 +79,6 @@ tags = {
   CostCenter  = "CC123456"
   Compliance  = "FedRAMP"
 }
+# CodeCommit Configuration
+codecommit_enable_auto_checkov = true  # Automatically run Checkov security scans on push to main branch
+

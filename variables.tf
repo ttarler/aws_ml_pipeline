@@ -343,3 +343,15 @@ variable "ecs_schedule_expression" {
   type        = string
   default     = "rate(1 hour)"
 }
+
+# CodeCommit Configuration
+variable "codecommit_enable_auto_checkov" {
+  description = "Enable automatic Checkov security scanning on push to main branch"
+  type        = bool
+  default     = true
+}
+
+variable "account_id" {
+  description = "AWS account ID"
+  type        = string
+}

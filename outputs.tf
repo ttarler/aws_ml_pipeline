@@ -197,6 +197,37 @@ output "connection_info" {
   }
 }
 
+# CodeCommit Outputs
+output "codecommit_repository_name" {
+  description = "Name of the CodeCommit repository for infrastructure code"
+  value       = module.codecommit.repository_name
+}
+
+output "codecommit_repository_arn" {
+  description = "ARN of the CodeCommit repository"
+  value       = module.codecommit.repository_arn
+}
+
+output "codecommit_clone_url_http" {
+  description = "HTTP clone URL for the CodeCommit repository"
+  value       = module.codecommit.clone_url_http
+}
+
+output "codecommit_clone_url_ssh" {
+  description = "SSH clone URL for the CodeCommit repository"
+  value       = module.codecommit.clone_url_ssh
+}
+
+output "codecommit_codebuild_project_name" {
+  description = "Name of the CodeBuild project for Checkov security scanning"
+  value       = module.codecommit.codebuild_project_name
+}
+
+output "codecommit_checkov_logs" {
+  description = "CloudWatch log group for Checkov scan results"
+  value       = module.codecommit.cloudwatch_log_group
+}
+
 # Instructions
 output "next_steps" {
   description = "Next steps for using the infrastructure"
@@ -208,9 +239,13 @@ output "next_steps" {
     2. Upload data to the landing zone bucket: s3://${module.s3.landing_zone_bucket_id}/
     ${var.enable_emr && var.enable_bastion ? "3. SSH to EMR via bastion:\n       ssh -i bastion-key.pem ec2-user@${module.networking.bastion_public_ip}\n       ssh -i emr-key.pem hadoop@${module.emr[0].master_public_dns}" : var.enable_emr ? "3. Connect to EMR cluster: ${module.emr[0].cluster_id} (bastion not enabled)" : "3. EMR cluster not enabled"}
     4. Push Docker images to ECR repositories: ${join(", ", module.ecs.ecr_repository_urls)}
+    5. Push infrastructure code to CodeCommit: ./scripts/push-to-codecommit.sh
 
     To check available SageMaker instance types:
       ./scripts/check-sagemaker-instance-types.sh ${var.aws_region}
+
+    CodeCommit Repository: ${module.codecommit.clone_url_http}
+    Checkov Logs: ${module.codecommit.cloudwatch_log_group}
 
     For more information, see the README.md file.
   EOT

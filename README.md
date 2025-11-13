@@ -98,6 +98,16 @@ This Terraform Infrastructure as Code (IaC) project deploys a comprehensive mach
 - Server-side encryption enabled on all buckets
 - Versioning enabled for data protection
 
+### 7. CodeCommit with Checkov Security Scanning
+- **AWS CodeCommit repository** for infrastructure code version control
+- **Automated Checkov security scanning** on every push to main branch
+- **CodeBuild project** for running security checks
+- **EventBridge integration** for automatic scan triggers
+- **1000+ security checks** for infrastructure code
+- **CloudWatch logging** for scan results and audit trail
+- **Easy setup** with provided scripts for code upload
+- See [CODECOMMIT_CHECKOV.md](docs/CODECOMMIT_CHECKOV.md) for detailed documentation
+
 ## Prerequisites
 
 - Terraform >= 1.5.0
@@ -178,6 +188,36 @@ terraform output
 ```
 
 Save these outputs for accessing your infrastructure.
+
+### 8. Push Code to CodeCommit (Recommended)
+
+After successful deployment, push your infrastructure code to the CodeCommit repository:
+
+```bash
+# Push code to CodeCommit and trigger Checkov security scan
+./scripts/push-to-codecommit.sh us-gov-west-1
+```
+
+This will:
+- Initialize git repository (if needed)
+- Configure AWS CodeCommit credentials
+- Push code to the CodeCommit repository
+- Automatically trigger Checkov security scan
+
+View scan results:
+```bash
+# View Checkov scan logs
+aws logs tail $(terraform output -raw codecommit_checkov_logs) \
+  --follow \
+  --region us-gov-west-1
+
+# View CodeBuild project
+aws codebuild list-builds-for-project \
+  --project-name $(terraform output -raw codecommit_codebuild_project_name) \
+  --region us-gov-west-1
+```
+
+For detailed information, see [CodeCommit & Checkov Documentation](docs/CODECOMMIT_CHECKOV.md).
 
 ## Post-Deployment Configuration
 

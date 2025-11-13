@@ -1,0 +1,64 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing Checkov..."
+      - pip install checkov
+      - checkov --version
+
+  pre_build:
+    commands:
+      - echo "Starting Checkov security scan for $PROJECT_NAME..."
+      - echo "Scan started at $(date)"
+
+  build:
+    commands:
+      - echo "Running Checkov on Terraform configurations..."
+      # Run Checkov with detailed output
+      # --framework terraform: Scan Terraform files only
+      # --output cli: Human-readable output
+      # --output junitxml: Generate JUnit XML for reporting
+      # --soft-fail: Don't fail build on findings (can be changed to --hard-fail-on HIGH)
+      - |
+        checkov \
+          --directory . \
+          --framework terraform \
+          --output cli \
+          --output junitxml \
+          --output-file-path console,checkov-report.xml \
+          --compact \
+          --quiet \
+          || export CHECKOV_EXIT_CODE=$?
+
+      - echo "Checkov scan completed with exit code ${CHECKOV_EXIT_CODE:-0}"
+
+  post_build:
+    commands:
+      - echo "Generating scan summary..."
+      - |
+        if [ -f checkov-report.xml ]; then
+          echo "Checkov report generated successfully"
+          # Count findings by severity
+          echo "==================================="
+          echo "Checkov Security Scan Summary"
+          echo "==================================="
+          grep -o 'failures="[0-9]*"' checkov-report.xml | head -1 || echo "No failures found"
+          echo "==================================="
+        else
+          echo "No Checkov report generated"
+        fi
+      - echo "Scan completed at $(date)"
+
+reports:
+  checkov:
+    files:
+      - 'checkov-report.xml'
+    file-format: 'JUNITXML'
+
+artifacts:
+  files:
+    - checkov-report.xml
+  name: checkov-scan-results

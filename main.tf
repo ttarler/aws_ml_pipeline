@@ -202,3 +202,20 @@ module "ecs" {
 
   depends_on = [module.iam]
 }
+
+# CodeCommit Module with Checkov Security Scanning
+module "codecommit" {
+  source = "./modules/codecommit"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  aws_region           = var.aws_region
+  aws_partition        = var.aws_partition
+  account_id           = var.account_id
+  artifacts_bucket_arn = module.s3.ecs_artifacts_bucket_arn
+  enable_auto_checkov  = var.codecommit_enable_auto_checkov
+
+  tags = var.tags
+
+  depends_on = [module.s3]
+}
