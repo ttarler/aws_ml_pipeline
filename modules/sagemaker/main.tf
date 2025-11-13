@@ -90,10 +90,10 @@ resource "aws_sagemaker_domain" "main" {
     security_groups = [var.security_group_id]
 
     # JupyterLab settings for spaces (includes R kernel support)
+    # Using default SageMaker Studio images (no custom image ARN needed)
     jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type       = "ml.t3.medium"
-        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-cpu"
+        instance_type = "ml.t3.medium"
       }
 
       # Enable R kernel and data science tools by default
@@ -363,10 +363,10 @@ resource "aws_sagemaker_space" "general_purpose_template" {
 
   space_settings {
     # JupyterLab app settings (primary interface for spaces)
+    # Using default SageMaker Studio images (no custom image ARN needed)
     jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type       = "ml.t3.medium"
-        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-cpu"
+        instance_type = "ml.t3.medium"
       }
 
       # Default code repositories for R packages and examples
@@ -410,10 +410,10 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
 
   space_settings {
     # JupyterLab app settings (primary interface for spaces)
+    # Using default SageMaker Studio images (no custom image ARN needed)
     jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type       = "ml.g4dn.xlarge"
-        sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-distribution-gpu"
+        instance_type = "ml.g4dn.xlarge"
       }
 
       # Default code repositories for R packages and examples
