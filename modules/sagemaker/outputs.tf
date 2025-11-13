@@ -74,11 +74,6 @@ output "ecr_distribution_cpu_repository_url" {
   value       = aws_ecr_repository.sagemaker_distribution_cpu.repository_url
 }
 
-output "ecr_distribution_gpu_repository_url" {
-  description = "URL of the ECR repository for SageMaker Distribution GPU image"
-  value       = aws_ecr_repository.sagemaker_distribution_gpu.repository_url
-}
-
 # SageMaker Image Outputs
 output "sagemaker_datascience_image_arn" {
   description = "ARN of the SageMaker Data Science R image"
@@ -88,9 +83,4 @@ output "sagemaker_datascience_image_arn" {
 output "sagemaker_distribution_cpu_image_arn" {
   description = "ARN of the SageMaker Distribution CPU image"
   value       = aws_sagemaker_image.distribution_cpu.arn
-}
-
-output "sagemaker_distribution_gpu_image_arn" {
-  description = "ARN of the SageMaker Distribution GPU image"
-  value       = aws_sagemaker_image.distribution_gpu.arn
 }

@@ -49,13 +49,11 @@ echo
 # ECR repository URIs
 DATASCIENCE_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT_NAME}/sagemaker-datascience-r"
 CPU_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT_NAME}/sagemaker-distribution-cpu"
-GPU_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT_NAME}/sagemaker-distribution-gpu"
 
 # Public ECR image URIs (these are examples - adjust based on actual SageMaker public images)
 # For GovCloud, we'll use the commercial region public images and copy them
 PUBLIC_DATASCIENCE="public.ecr.aws/sagemaker/sagemaker-datascience-r:latest"
 PUBLIC_CPU="public.ecr.aws/sagemaker/sagemaker-distribution:latest-cpu"
-PUBLIC_GPU="public.ecr.aws/sagemaker/sagemaker-distribution:latest-gpu"
 
 # Note: Since GovCloud doesn't have direct access to public ECR, we need to pull from commercial region first
 # This script assumes you're running from a system that can access both commercial AWS and GovCloud
@@ -63,12 +61,10 @@ PUBLIC_GPU="public.ecr.aws/sagemaker/sagemaker-distribution:latest-gpu"
 echo "📦 Images to copy:"
 echo "  1. Data Science (R): ${PUBLIC_DATASCIENCE}"
 echo "  2. Distribution CPU: ${PUBLIC_CPU}"
-echo "  3. Distribution GPU: ${PUBLIC_GPU}"
 echo
 echo "📍 Destination repositories:"
 echo "  1. ${DATASCIENCE_REPO}"
 echo "  2. ${CPU_REPO}"
-echo "  3. ${GPU_REPO}"
 echo
 
 # Login to private ECR (GovCloud)
@@ -152,13 +148,6 @@ if copy_image "$PUBLIC_CPU" "$CPU_REPO" "Distribution CPU"; then
     ((SUCCESS_COUNT++))
 else
     echo "❌ Distribution CPU image copy failed"
-    ((FAIL_COUNT++))
-fi
-
-if copy_image "$PUBLIC_GPU" "$GPU_REPO" "Distribution GPU"; then
-    ((SUCCESS_COUNT++))
-else
-    echo "❌ Distribution GPU image copy failed"
     ((FAIL_COUNT++))
 fi
 

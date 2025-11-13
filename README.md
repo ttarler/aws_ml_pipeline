@@ -242,19 +242,12 @@ SageMaker Studio includes pre-configured space templates with R kernel support a
 
 **Pre-Configured Space Templates:**
 
-**1. General Purpose CPU Template** (`general-purpose-cpu-template`)
+**General Purpose CPU Template** (`general-purpose-cpu-template`)
 - **Compute**: CPU-optimized instances
 - **Instance Types**: ml.t3.medium to ml.m5.24xlarge
 - **Image**: SageMaker Distribution (CPU)
 - **Use Cases**: Data analysis, statistical computing, R programming, data preprocessing
 - **Default Instance**: ml.t3.medium (cost-effective for development)
-
-**2. Accelerated Compute GPU Template** (`accelerated-compute-gpu-template`)
-- **Compute**: GPU-accelerated instances
-- **Instance Types**: ml.g4dn.xlarge to ml.p3.16xlarge
-- **Image**: SageMaker Distribution (GPU)
-- **Use Cases**: Deep learning, model training, GPU-accelerated R workloads
-- **Default Instance**: ml.g4dn.xlarge (cost-effective GPU option)
 
 **Creating a Space:**
 
@@ -262,9 +255,7 @@ SageMaker Studio includes pre-configured space templates with R kernel support a
 1. Open SageMaker Studio in AWS Console
 2. Click **Spaces** → **Create space**
 3. Select your domain: `<project-name>-domain`
-4. Choose a space template:
-   - **general-purpose-cpu-template** - For R, Python, data analysis
-   - **accelerated-compute-gpu-template** - For deep learning, GPU workloads
+4. Choose the **general-purpose-cpu-template** space template
 5. Name your space (e.g., `r-analytics-workspace`)
 6. **(Optional)** Change instance type from default
 7. Click **Create space**

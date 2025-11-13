@@ -50,34 +50,11 @@ resource "aws_ecr_repository" "sagemaker_distribution_cpu" {
   )
 }
 
-resource "aws_ecr_repository" "sagemaker_distribution_gpu" {
-  name                 = "${var.project_name}/sagemaker-distribution-gpu"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  encryption_configuration {
-    encryption_type = "AES256"
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name        = "${var.project_name}-sagemaker-distribution-gpu"
-      Purpose     = "SageMaker Distribution GPU Image"
-      Environment = var.environment
-    }
-  )
-}
-
 # ECR Lifecycle Policy to keep only recent images
 resource "aws_ecr_lifecycle_policy" "sagemaker_images" {
   for_each = {
     datascience      = aws_ecr_repository.sagemaker_datascience.name
     distribution_cpu = aws_ecr_repository.sagemaker_distribution_cpu.name
-    distribution_gpu = aws_ecr_repository.sagemaker_distribution_gpu.name
   }
 
   repository = each.value
@@ -108,7 +85,6 @@ locals {
 
   sagemaker_datascience_image_uri = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-datascience-r:latest"
   sagemaker_cpu_image_uri         = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-distribution-cpu:latest"
-  sagemaker_gpu_image_uri         = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-distribution-gpu:latest"
 
   # Common SageMaker instance types available in AWS GovCloud
   govcloud_compatible_notebook_types = [
@@ -235,7 +211,6 @@ resource "aws_sagemaker_domain" "main" {
   depends_on = [
     aws_sagemaker_image_version.datascience_r,
     aws_sagemaker_image_version.distribution_cpu,
-    aws_sagemaker_image_version.distribution_gpu,
     aws_sagemaker_app_image_config.datascience_r
   ]
 }
@@ -463,33 +438,6 @@ resource "aws_sagemaker_image_version" "distribution_cpu" {
 
   depends_on = [
     aws_sagemaker_image.distribution_cpu
-  ]
-}
-
-# SageMaker Image for GPU Distribution (from private ECR)
-resource "aws_sagemaker_image" "distribution_gpu" {
-  image_name = "${var.project_name}-distribution-gpu"
-  role_arn   = var.execution_role_arn
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-distribution-gpu-image"
-    }
-  )
-
-  depends_on = [
-    aws_ecr_repository.sagemaker_distribution_gpu
-  ]
-}
-
-# SageMaker Image Version for GPU Distribution
-resource "aws_sagemaker_image_version" "distribution_gpu" {
-  image_name = aws_sagemaker_image.distribution_gpu.id
-  base_image = local.sagemaker_gpu_image_uri
-
-  depends_on = [
-    aws_sagemaker_image.distribution_gpu
   ]
 }
 
