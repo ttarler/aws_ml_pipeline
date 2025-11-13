@@ -94,6 +94,7 @@ module "sagemaker" {
   source = "./modules/sagemaker"
 
   project_name                    = var.project_name
+  environment                     = var.environment
   vpc_id                          = module.networking.vpc_id
   subnet_ids                      = module.networking.private_subnet_ids
   security_group_id               = module.networking.sagemaker_security_group_id

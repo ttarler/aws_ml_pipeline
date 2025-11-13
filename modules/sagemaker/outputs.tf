@@ -72,3 +72,35 @@ output "accelerated_compute_instance_types" {
   description = "List of accelerated compute (GPU) instance types for spaces"
   value       = local.accelerated_compute_instances
 }
+
+# ECR Repository Outputs
+output "ecr_datascience_r_repository_url" {
+  description = "URL of the ECR repository for SageMaker Data Science R image"
+  value       = aws_ecr_repository.sagemaker_datascience.repository_url
+}
+
+output "ecr_distribution_cpu_repository_url" {
+  description = "URL of the ECR repository for SageMaker Distribution CPU image"
+  value       = aws_ecr_repository.sagemaker_distribution_cpu.repository_url
+}
+
+output "ecr_distribution_gpu_repository_url" {
+  description = "URL of the ECR repository for SageMaker Distribution GPU image"
+  value       = aws_ecr_repository.sagemaker_distribution_gpu.repository_url
+}
+
+# SageMaker Image Outputs
+output "sagemaker_datascience_image_arn" {
+  description = "ARN of the SageMaker Data Science R image"
+  value       = aws_sagemaker_image.datascience_r.arn
+}
+
+output "sagemaker_distribution_cpu_image_arn" {
+  description = "ARN of the SageMaker Distribution CPU image"
+  value       = aws_sagemaker_image.distribution_cpu.arn
+}
+
+output "sagemaker_distribution_gpu_image_arn" {
+  description = "ARN of the SageMaker Distribution GPU image"
+  value       = aws_sagemaker_image.distribution_gpu.arn
+}

@@ -14,9 +14,9 @@ variable "neptune_security_group_id" {
 }
 
 variable "neptune_engine_version" {
-  description = "Neptune engine version (format: neptune1.x)"
+  description = "Neptune engine version (format: neptune1.x) - GovCloud supports 1.0, 1.1, 1.2"
   type        = string
-  default     = "neptune1.3"
+  default     = "1.2.1.0"
 }
 
 variable "instance_class" {

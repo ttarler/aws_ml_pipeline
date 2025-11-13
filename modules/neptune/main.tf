@@ -1,3 +1,11 @@
+# Local variables for Neptune version handling
+locals {
+  # Extract parameter group family from engine version
+  # For version "1.2.1.0", family is "neptune1.2"
+  # For version "1.0.x.x", family is "neptune1"
+  neptune_family = "neptune${replace(var.neptune_engine_version, "/^(\\d+\\.\\d+).*/", "$1")}"
+}
+
 # Neptune Subnet Group
 resource "aws_neptune_subnet_group" "main" {
   name       = "${var.project_name}-neptune-subnet-group"
@@ -13,7 +21,7 @@ resource "aws_neptune_subnet_group" "main" {
 
 # Neptune Cluster Parameter Group
 resource "aws_neptune_cluster_parameter_group" "main" {
-  family      = var.neptune_engine_version
+  family      = local.neptune_family
   name        = "${var.project_name}-neptune-cluster-params"
   description = "Neptune cluster parameter group for ${var.project_name}"
 
@@ -37,7 +45,7 @@ resource "aws_neptune_cluster_parameter_group" "main" {
 
 # Neptune DB Parameter Group
 resource "aws_neptune_parameter_group" "main" {
-  family      = var.neptune_engine_version
+  family      = local.neptune_family
   name        = "${var.project_name}-neptune-db-params"
   description = "Neptune DB parameter group for ${var.project_name}"
 

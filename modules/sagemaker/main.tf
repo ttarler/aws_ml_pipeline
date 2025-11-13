@@ -1,8 +1,115 @@
 # Data source for current region
 data "aws_region" "current" {}
 
-# Local variables for instance type validation
+# Data source for AWS account ID
+data "aws_caller_identity" "current" {}
+
+# ECR Repositories for SageMaker Images
+# These will store copies of public SageMaker images for use in the domain
+resource "aws_ecr_repository" "sagemaker_datascience" {
+  name                 = "${var.project_name}/sagemaker-datascience-r"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-sagemaker-datascience-r"
+      Purpose     = "SageMaker Data Science Image with R"
+      Environment = var.environment
+    }
+  )
+}
+
+resource "aws_ecr_repository" "sagemaker_distribution_cpu" {
+  name                 = "${var.project_name}/sagemaker-distribution-cpu"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-sagemaker-distribution-cpu"
+      Purpose     = "SageMaker Distribution CPU Image"
+      Environment = var.environment
+    }
+  )
+}
+
+resource "aws_ecr_repository" "sagemaker_distribution_gpu" {
+  name                 = "${var.project_name}/sagemaker-distribution-gpu"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-sagemaker-distribution-gpu"
+      Purpose     = "SageMaker Distribution GPU Image"
+      Environment = var.environment
+    }
+  )
+}
+
+# ECR Lifecycle Policy to keep only recent images
+resource "aws_ecr_lifecycle_policy" "sagemaker_images" {
+  for_each = {
+    datascience      = aws_ecr_repository.sagemaker_datascience.name
+    distribution_cpu = aws_ecr_repository.sagemaker_distribution_cpu.name
+    distribution_gpu = aws_ecr_repository.sagemaker_distribution_gpu.name
+  }
+
+  repository = each.value
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 3 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 3
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# Local variables for instance type validation and ECR image URIs
 locals {
+  # ECR image URIs for SageMaker
+  ecr_account_id = data.aws_caller_identity.current.account_id
+  ecr_region     = data.aws_region.current.name
+
+  sagemaker_datascience_image_uri = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-datascience-r:latest"
+  sagemaker_cpu_image_uri         = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-distribution-cpu:latest"
+  sagemaker_gpu_image_uri         = "${local.ecr_account_id}.dkr.ecr.${local.ecr_region}.amazonaws.com/${var.project_name}/sagemaker-distribution-gpu:latest"
+
   # Common SageMaker instance types available in AWS GovCloud
   govcloud_compatible_notebook_types = [
     "ml.t3.medium",
@@ -75,7 +182,15 @@ resource "aws_sagemaker_domain" "main" {
 
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type = var.kernel_gateway_instance_type
+        instance_type               = var.kernel_gateway_instance_type
+        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
+        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
+      }
+
+      # Use custom image for R kernel
+      custom_image {
+        image_name            = aws_sagemaker_image.datascience_r.id
+        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
       }
     }
 
@@ -103,12 +218,21 @@ resource "aws_sagemaker_domain" "main" {
     }
 
     # Kernel Gateway settings for notebook instances
-    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
+    # Uses custom ECR image with R kernel support
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type        = var.kernel_gateway_instance_type
-        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+        instance_type               = var.kernel_gateway_instance_type
+        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
+        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
+        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
+
+      # Use custom image for R kernel
+      custom_image {
+        image_name            = aws_sagemaker_image.datascience_r.id
+        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
+      }
+
       lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
 
@@ -126,6 +250,13 @@ resource "aws_sagemaker_domain" "main" {
       Name = "${var.project_name}-sagemaker-domain"
     }
   )
+
+  depends_on = [
+    aws_sagemaker_image_version.datascience_r,
+    aws_sagemaker_image_version.distribution_cpu,
+    aws_sagemaker_image_version.distribution_gpu,
+    aws_sagemaker_app_image_config.datascience_r
+  ]
 }
 
 # SageMaker User Profile
@@ -275,6 +406,112 @@ EOL
   )
 }
 
+# SageMaker Image for Data Science with R (from private ECR)
+resource "aws_sagemaker_image" "datascience_r" {
+  image_name = "${var.project_name}-datascience-r"
+  role_arn   = var.execution_role_arn
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-datascience-r-image"
+    }
+  )
+
+  depends_on = [
+    aws_ecr_repository.sagemaker_datascience
+  ]
+}
+
+# SageMaker Image Version for Data Science R
+resource "aws_sagemaker_image_version" "datascience_r" {
+  image_name = aws_sagemaker_image.datascience_r.id
+  base_image = local.sagemaker_datascience_image_uri
+
+  depends_on = [
+    aws_sagemaker_image.datascience_r
+  ]
+}
+
+# SageMaker App Image Config for Data Science R
+resource "aws_sagemaker_app_image_config" "datascience_r" {
+  app_image_config_name = "${var.project_name}-datascience-r-config"
+
+  kernel_gateway_image_config {
+    kernel_spec {
+      name         = "ir"
+      display_name = "R (SageMaker Distribution)"
+    }
+
+    file_system_config {
+      default_gid = 100
+      default_uid = 1000
+      mount_path  = "/home/sagemaker-user"
+    }
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-datascience-r-config"
+    }
+  )
+}
+
+# SageMaker Image for CPU Distribution (from private ECR)
+resource "aws_sagemaker_image" "distribution_cpu" {
+  image_name = "${var.project_name}-distribution-cpu"
+  role_arn   = var.execution_role_arn
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-distribution-cpu-image"
+    }
+  )
+
+  depends_on = [
+    aws_ecr_repository.sagemaker_distribution_cpu
+  ]
+}
+
+# SageMaker Image Version for CPU Distribution
+resource "aws_sagemaker_image_version" "distribution_cpu" {
+  image_name = aws_sagemaker_image.distribution_cpu.id
+  base_image = local.sagemaker_cpu_image_uri
+
+  depends_on = [
+    aws_sagemaker_image.distribution_cpu
+  ]
+}
+
+# SageMaker Image for GPU Distribution (from private ECR)
+resource "aws_sagemaker_image" "distribution_gpu" {
+  image_name = "${var.project_name}-distribution-gpu"
+  role_arn   = var.execution_role_arn
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-distribution-gpu-image"
+    }
+  )
+
+  depends_on = [
+    aws_ecr_repository.sagemaker_distribution_gpu
+  ]
+}
+
+# SageMaker Image Version for GPU Distribution
+resource "aws_sagemaker_image_version" "distribution_gpu" {
+  image_name = aws_sagemaker_image.distribution_gpu.id
+  base_image = local.sagemaker_gpu_image_uri
+
+  depends_on = [
+    aws_sagemaker_image.distribution_gpu
+  ]
+}
+
 # SageMaker Notebook Instance (optional - for direct EMR access)
 resource "aws_sagemaker_notebook_instance" "emr_connector" {
   count                  = var.create_notebook_instance ? 1 : 0
@@ -376,11 +613,19 @@ resource "aws_sagemaker_space" "general_purpose_template" {
     }
 
     # Kernel Gateway settings for R and Spark kernels
-    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
+    # Uses custom ECR image with R kernel support
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type        = "ml.m5.large"
-        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+        instance_type               = "ml.m5.xlarge"
+        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
+        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
+        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+      }
+
+      # Use custom image for R kernel
+      custom_image {
+        image_name            = aws_sagemaker_image.datascience_r.id
+        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
       }
 
       # Lifecycle config to install R, Spark, and Neptune kernels
@@ -423,11 +668,19 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
     }
 
     # Kernel Gateway settings for R and Spark kernels with GPU support
-    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
+    # Uses custom ECR image with R kernel support
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type        = "ml.g4dn.xlarge"
-        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+        instance_type               = "ml.g4dn.xlarge"
+        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
+        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
+        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+      }
+
+      # Use custom image for R kernel
+      custom_image {
+        image_name            = aws_sagemaker_image.datascience_r.id
+        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
       }
 
       # Lifecycle config to install R, Spark, and Neptune kernels
