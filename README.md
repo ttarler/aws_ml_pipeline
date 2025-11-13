@@ -289,18 +289,26 @@ To properly destroy the infrastructure and avoid common errors, follow the clean
 # Step 2: Wait for cleanup to complete (apps show Status='Deleted')
 aws sagemaker list-apps --domain-id-equals $(terraform output -raw sagemaker_domain_id) --region us-gov-west-1
 
-# Step 3: Destroy infrastructure
+# Step 3: Destroy infrastructure (EFS mount targets will be cleaned up automatically)
 terraform destroy
 ```
 
+**Automatic Cleanup Features:**
+- ✅ **EFS Mount Targets**: Automatically deleted before subnets during `terraform destroy`
+- ⚠️ **SageMaker Apps**: Must be manually cleaned up with the cleanup script before destroy
+
 **Common destroy errors and solutions:**
 - **SageMaker user profile error**: Run the cleanup script to delete apps and spaces first
+- **EFS mount target error**: Automatically handled by null_resource (see [CLEANUP_GUIDE.md](docs/CLEANUP_GUIDE.md) for manual cleanup if needed)
 - **Subnet dependency error**: Check for attached network interfaces with `./scripts/check-subnet-dependencies.sh`
 - **EMR security group error**: Wait 3-5 minutes after EMR termination for network interfaces to be released
 - For detailed troubleshooting, see [docs/CLEANUP_GUIDE.md](docs/CLEANUP_GUIDE.md)
 
 **Troubleshooting subnet deletion:**
 ```bash
+# EFS cleanup runs automatically during terraform destroy, but if needed manually:
+./scripts/cleanup-efs.sh us-gov-west-1 <project-name>
+
 # Identify what's blocking subnet deletion
 ./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
 

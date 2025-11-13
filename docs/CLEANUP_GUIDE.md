@@ -29,14 +29,77 @@ aws sagemaker list-apps --domain-id-equals $DOMAIN_ID --region us-gov-west-1
 terraform destroy
 ```
 
-### 2. Subnet Deletion Error
+### 2. EFS Mount Target Deletion Error
 
 **Error Message:**
 ```
 Error: deleting subnet: DependencyViolation: The subnet has dependencies and cannot be deleted
 ```
 
-**Cause:** Network interfaces (ENIs) from EMR, SageMaker, or ECS are still attached to the subnets.
+**Cause:** SageMaker Studio automatically creates EFS file systems for user home directories. These EFS file systems create mount targets in private subnets, and mount targets create elastic network interfaces (ENIs) that block subnet deletion.
+
+**Automated Solution (Recommended):**
+
+The infrastructure includes automatic EFS cleanup via a `null_resource` in the networking module. During `terraform destroy`, this resource will:
+1. Automatically detect EFS mount targets in your VPC
+2. Delete the mount targets before subnets are destroyed
+3. Wait for cleanup to complete
+
+You should see output like:
+```
+==========================================
+EFS Mount Target Cleanup
+==========================================
+Project: your-project-name
+Region: us-gov-west-1
+VPC: vpc-xxxxx
+
+🗑️  Deleting mount target: fsmt-xxxxx (EFS: fs-xxxxx, Subnet: subnet-xxxxx)
+Deleted 3 mount target(s)
+⏳ Waiting 45 seconds for mount targets to be fully deleted...
+✅ EFS cleanup complete
+==========================================
+```
+
+**Manual Solution (if needed):**
+
+If automatic cleanup fails, run the cleanup script manually:
+
+```bash
+# Run EFS cleanup script
+./scripts/cleanup-efs.sh us-gov-west-1 <project-name>
+
+# Wait for mount targets to be deleted
+sleep 60
+
+# Verify cleanup
+aws efs describe-mount-targets --region us-gov-west-1
+
+# Retry destroy
+terraform destroy
+```
+
+**Check for EFS Resources:**
+
+```bash
+# List all EFS file systems
+aws efs describe-file-systems --region us-gov-west-1
+
+# List mount targets for a specific file system
+aws efs describe-mount-targets --file-system-id fs-xxxxx --region us-gov-west-1
+
+# Check which subnets have mount targets
+./scripts/check-subnet-dependencies.sh us-gov-west-1 <project-name>
+```
+
+### 3. Subnet Deletion Error (General)
+
+**Error Message:**
+```
+Error: deleting subnet: DependencyViolation: The subnet has dependencies and cannot be deleted
+```
+
+**Cause:** Network interfaces (ENIs) from EMR, SageMaker, ECS, or EFS mount targets are still attached to the subnets.
 
 **Solution:** Run the dependency checker script:
 
@@ -46,23 +109,26 @@ Error: deleting subnet: DependencyViolation: The subnet has dependencies and can
 
 # This will show:
 # - All network interfaces in your subnets
-# - What resources (EMR/SageMaker/ECS) own them
+# - What resources (EMR/SageMaker/ECS/EFS) own them
 # - Recommended cleanup actions
 ```
 
 **Quick Fix:**
 ```bash
-# Step 1: Destroy compute resources first
+# Step 1: Clean up EFS mount targets
+./scripts/cleanup-efs.sh us-gov-west-1 <project-name>
+
+# Step 2: Destroy compute resources
 terraform destroy -target=module.emr -target=module.sagemaker -target=module.ecs
 
-# Step 2: Wait 5 minutes for ENIs to be released
+# Step 3: Wait 5 minutes for ENIs to be released
 sleep 300
 
-# Step 3: Retry full destroy
+# Step 4: Retry full destroy
 terraform destroy
 ```
 
-### 3. EMR Security Group Deletion Error
+### 4. EMR Security Group Deletion Error
 
 **Error Message:**
 ```

@@ -1008,3 +1008,77 @@ resource "aws_instance" "bastion" {
     aws_route_table_association.public
   ]
 }
+
+# EFS Mount Target Cleanup Resource
+# This ensures EFS mount targets are deleted before subnets during terraform destroy
+# SageMaker Studio automatically creates EFS file systems that attach to private subnets
+resource "null_resource" "efs_cleanup" {
+  # Trigger recreation if VPC changes
+  triggers = {
+    vpc_id       = aws_vpc.main.id
+    project_name = var.project_name
+    region       = var.aws_region
+  }
+
+  # Cleanup EFS mount targets before destroying networking resources
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      echo "=========================================="
+      echo "EFS Mount Target Cleanup"
+      echo "=========================================="
+      echo "Project: ${self.triggers.project_name}"
+      echo "Region: ${self.triggers.region}"
+      echo "VPC: ${self.triggers.vpc_id}"
+      echo ""
+
+      # Check if cleanup script exists
+      if [ -f "${path.root}/scripts/cleanup-efs.sh" ]; then
+        bash "${path.root}/scripts/cleanup-efs.sh" "${self.triggers.region}" "${self.triggers.project_name}" || true
+      else
+        echo "⚠️  EFS cleanup script not found. Attempting manual cleanup..."
+
+        # Get VPC ID
+        VPC_ID="${self.triggers.vpc_id}"
+
+        # Find and delete mount targets in this VPC
+        DELETED_COUNT=0
+        aws efs describe-file-systems --region "${self.triggers.region}" --query 'FileSystems[*].FileSystemId' --output text 2>/dev/null | while read -r FS_ID; do
+          if [ -n "$FS_ID" ]; then
+            aws efs describe-mount-targets --region "${self.triggers.region}" --file-system-id "$FS_ID" --query 'MountTargets[*].[MountTargetId,SubnetId]' --output text 2>/dev/null | while IFS=$'\t' read -r MT_ID SUBNET_ID; do
+              if [ -n "$MT_ID" ] && [ -n "$SUBNET_ID" ]; then
+                MT_VPC=$(aws ec2 describe-subnets --region "${self.triggers.region}" --subnet-ids "$SUBNET_ID" --query 'Subnets[0].VpcId' --output text 2>/dev/null || echo "")
+                if [ "$MT_VPC" = "$VPC_ID" ]; then
+                  echo "🗑️  Deleting mount target: $MT_ID (EFS: $FS_ID, Subnet: $SUBNET_ID)"
+                  aws efs delete-mount-target --region "${self.triggers.region}" --mount-target-id "$MT_ID" 2>/dev/null || true
+                  DELETED_COUNT=$((DELETED_COUNT + 1))
+                fi
+              fi
+            done
+          fi
+        done
+
+        if [ $DELETED_COUNT -gt 0 ]; then
+          echo ""
+          echo "Deleted $DELETED_COUNT mount target(s)"
+          echo "⏳ Waiting 45 seconds for mount targets to be fully deleted..."
+          sleep 45
+        else
+          echo "✅ No mount targets found to delete"
+        fi
+      fi
+
+      echo ""
+      echo "✅ EFS cleanup complete"
+      echo "=========================================="
+    EOT
+  }
+
+  # This resource depends on private subnets, so during destroy:
+  # 1. Compute resources (SageMaker, EMR) are destroyed first
+  # 2. This null_resource is destroyed next (running the cleanup script)
+  # 3. Private subnets are destroyed last
+  depends_on = [
+    aws_subnet.private
+  ]
+}
