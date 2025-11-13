@@ -2,6 +2,49 @@
 
 This guide explains how to properly destroy the infrastructure to avoid common errors.
 
+## Automatic Cleanup Features
+
+The infrastructure includes several automatic cleanup mechanisms to ensure smooth destruction:
+
+### ✅ Route Table Cleanup
+- **What**: Route tables and their associations are automatically deleted before the VPC
+- **How**: Lifecycle rules and dependency coordination ensure proper destroy order
+- **Benefit**: Prevents "DependencyViolation" errors when deleting the VPC
+
+### ✅ Security Group Cleanup
+- **What**: All security groups are automatically deleted before the VPC
+- **How**: Lifecycle rules with `create_before_destroy = false` ensure proper order
+- **Benefit**: No manual security group cleanup required; clean VPC deletion
+
+### ✅ EFS Mount Target Cleanup
+- **What**: EFS mount targets are automatically detected and deleted before subnets
+- **How**: Null resource with destroy provisioner runs cleanup script
+- **Benefit**: Prevents subnet deletion failures due to attached ENIs
+
+### Destroy Order
+```
+Terraform Destroy Order (Automatic):
+1. Compute Resources (SageMaker, EMR, ECS, Neptune)
+2. EFS Mount Targets (via cleanup script)
+3. VPC Resource Cleanup Coordinator (null_resource)
+4. NAT Gateway
+5. Internet Gateway
+6. Security Groups (all 8 security groups)
+   - VPC Endpoints SG
+   - SageMaker SG
+   - EMR Master SG
+   - EMR Slave SG
+   - EMR Service SG
+   - ECS SG
+   - Neptune SG
+   - Bastion SG
+7. Route Table Associations
+8. Route Tables
+9. Routes
+10. Subnets
+11. VPC (deleted last)
+```
+
 ## Common Destroy Errors
 
 ### 1. SageMaker User Profile Deletion Error

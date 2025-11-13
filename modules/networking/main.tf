@@ -10,6 +10,12 @@ resource "aws_vpc" "main" {
       Name = "${var.project_name}-vpc"
     }
   )
+
+  lifecycle {
+    # Ensure VPC is deleted last during destroy
+    # Route tables, subnets, and other resources must be deleted first
+    create_before_destroy = false
+  }
 }
 
 # VPC DHCP Options (Custom DNS servers)
@@ -86,6 +92,11 @@ resource "aws_internet_gateway" "main" {
       Name = "${var.project_name}-igw"
     }
   )
+
+  lifecycle {
+    # Ensure IGW is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # Route Table for Public Subnets
@@ -104,6 +115,11 @@ resource "aws_route_table" "public" {
       Name = "${var.project_name}-public-rt"
     }
   )
+
+  lifecycle {
+    # Ensure route table is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # Public Route Table Associations
@@ -111,6 +127,11 @@ resource "aws_route_table_association" "public" {
   count          = length(aws_subnet.public)
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public[0].id
+
+  lifecycle {
+    # Ensure associations are deleted before route tables during destroy
+    create_before_destroy = false
+  }
 }
 
 # Elastic IP for NAT Gateway
@@ -141,6 +162,11 @@ resource "aws_nat_gateway" "main" {
     }
   )
 
+  lifecycle {
+    # Ensure NAT Gateway is deleted before subnets and VPC during destroy
+    create_before_destroy = false
+  }
+
   depends_on = [aws_internet_gateway.main]
 }
 
@@ -154,6 +180,11 @@ resource "aws_route_table" "private" {
       Name = "${var.project_name}-private-rt"
     }
   )
+
+  lifecycle {
+    # Ensure route table is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # Route to NAT Gateway for private subnets
@@ -169,6 +200,11 @@ resource "aws_route_table_association" "private" {
   count          = length(aws_subnet.private)
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
+
+  lifecycle {
+    # Ensure associations are deleted before route tables during destroy
+    create_before_destroy = false
+  }
 }
 
 # Security Group for VPC Endpoints
@@ -198,6 +234,11 @@ resource "aws_security_group" "vpc_endpoints" {
       Name = "${var.project_name}-vpc-endpoints-sg"
     }
   )
+
+  lifecycle {
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # VPC Endpoint for S3 (Gateway Endpoint)
@@ -521,6 +562,11 @@ resource "aws_security_group" "sagemaker" {
       Name = "${var.project_name}-sagemaker-sg"
     }
   )
+
+  lifecycle {
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # Security Group for EMR
@@ -533,7 +579,8 @@ resource "aws_security_group" "emr_master" {
   revoke_rules_on_delete = true
 
   lifecycle {
-    create_before_destroy = true
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
   }
 
   ingress {
@@ -625,7 +672,8 @@ resource "aws_security_group" "emr_slave" {
   revoke_rules_on_delete = true
 
   lifecycle {
-    create_before_destroy = true
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
   }
 
   ingress {
@@ -701,7 +749,8 @@ resource "aws_security_group" "emr_service" {
   revoke_rules_on_delete = true
 
   lifecycle {
-    create_before_destroy = true
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
   }
 
   ingress {
@@ -830,6 +879,11 @@ resource "aws_security_group" "ecs" {
       Name = "${var.project_name}-ecs-sg"
     }
   )
+
+  lifecycle {
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
+  }
 }
 
 # Security Group for Neptune
@@ -842,7 +896,8 @@ resource "aws_security_group" "neptune" {
   revoke_rules_on_delete = true
 
   lifecycle {
-    create_before_destroy = true
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
   }
 
   # Allow access from SageMaker
@@ -922,7 +977,8 @@ resource "aws_security_group" "bastion" {
   )
 
   lifecycle {
-    create_before_destroy = true
+    # Ensure security group is deleted before VPC during destroy
+    create_before_destroy = false
   }
 }
 
@@ -1080,5 +1136,41 @@ resource "null_resource" "efs_cleanup" {
   # 3. Private subnets are destroyed last
   depends_on = [
     aws_subnet.private
+  ]
+}
+
+# VPC Resource Cleanup Coordinator
+# This ensures all VPC-dependent resources (route tables, security groups, etc.)
+# are deleted before the VPC during terraform destroy
+resource "null_resource" "vpc_resource_cleanup" {
+  # Trigger on VPC ID change
+  triggers = {
+    vpc_id = aws_vpc.main.id
+  }
+
+  # This resource depends on all VPC-dependent resources
+  # During destroy, these will be deleted AFTER this null_resource is destroyed
+  # This ensures proper ordering: VPC resources → subnets → VPC
+  depends_on = [
+    # Route tables and associations
+    aws_route_table.public,
+    aws_route_table.private,
+    aws_route_table_association.public,
+    aws_route_table_association.private,
+    aws_route.private_nat_gateway,
+
+    # Security groups
+    aws_security_group.vpc_endpoints,
+    aws_security_group.sagemaker,
+    aws_security_group.emr_master,
+    aws_security_group.emr_slave,
+    aws_security_group.emr_service,
+    aws_security_group.ecs,
+    aws_security_group.neptune,
+    aws_security_group.bastion,
+
+    # Gateways
+    aws_nat_gateway.main,
+    aws_internet_gateway.main
   ]
 }
