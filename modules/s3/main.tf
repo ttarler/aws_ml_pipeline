@@ -141,6 +141,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "emr_logs" {
     id     = "expire-old-logs"
     status = "Enabled"
 
+    # Apply to all objects in the bucket
+    filter {}
+
     expiration {
       days = 90
     }
