@@ -6,16 +6,33 @@ The infrastructure is configured to ensure **all VPC-dependent resources (route 
 
 ## How It Works
 
-### 1. Lifecycle Rules
+### 1. Lifecycle Rules and Rule Revocation
 
-All VPC-dependent resources have explicit lifecycle rules:
+All VPC-dependent resources have explicit lifecycle rules and security groups have automatic rule revocation:
 
 ```hcl
+# For all VPC-dependent resources
 lifecycle {
   # Ensure resource is deleted before VPC during destroy
   create_before_destroy = false
 }
+
+# For all security groups (additional attribute)
+resource "aws_security_group" "example" {
+  # ...
+  revoke_rules_on_delete = true  # Automatically revoke all rules before deletion
+
+  lifecycle {
+    create_before_destroy = false
+  }
+}
 ```
+
+**What `revoke_rules_on_delete` does**:
+- Automatically revokes all ingress and egress rules before deleting the security group
+- Prevents dependency issues when security groups reference each other
+- Speeds up security group deletion by removing rule dependencies first
+- Essential when security groups have cross-references (e.g., SageMaker SG → VPC Endpoints SG)
 
 This is applied to:
 - **Route Tables**:

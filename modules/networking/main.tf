@@ -209,8 +209,9 @@ resource "aws_route_table_association" "private" {
 
 # Security Group for VPC Endpoints
 resource "aws_security_group" "vpc_endpoints" {
-  description = "Security group for VPC endpoints"
-  vpc_id      = aws_vpc.main.id
+  description            = "Security group for VPC endpoints"
+  vpc_id                 = aws_vpc.main.id
+  revoke_rules_on_delete = true
 
   ingress {
     from_port   = 443
@@ -496,9 +497,10 @@ resource "aws_vpc_endpoint" "emr" {
 
 # Security Group for SageMaker
 resource "aws_security_group" "sagemaker" {
-  name_prefix = "${var.project_name}-sagemaker-sg"
-  description = "Security group for SageMaker"
-  vpc_id      = aws_vpc.main.id
+  name_prefix            = "${var.project_name}-sagemaker-sg"
+  description            = "Security group for SageMaker"
+  vpc_id                 = aws_vpc.main.id
+  revoke_rules_on_delete = true
 
   ingress {
     from_port   = 0
@@ -845,9 +847,10 @@ resource "aws_security_group_rule" "emr_slave_9443_from_service" {
 
 # Security Group for ECS
 resource "aws_security_group" "ecs" {
-  name_prefix = "${var.project_name}-ecs-sg"
-  description = "Security group for ECS tasks"
-  vpc_id      = aws_vpc.main.id
+  name_prefix            = "${var.project_name}-ecs-sg"
+  description            = "Security group for ECS tasks"
+  vpc_id                 = aws_vpc.main.id
+  revoke_rules_on_delete = true
 
   ingress {
     from_port   = 0
@@ -964,10 +967,11 @@ resource "aws_security_group" "neptune" {
 
 # Bastion Host Security Group
 resource "aws_security_group" "bastion" {
-  count       = var.enable_bastion ? 1 : 0
-  name        = "${var.project_name}-bastion-sg"
-  description = "Security group for bastion host"
-  vpc_id      = aws_vpc.main.id
+  count                  = var.enable_bastion ? 1 : 0
+  name                   = "${var.project_name}-bastion-sg"
+  description            = "Security group for bastion host"
+  vpc_id                 = aws_vpc.main.id
+  revoke_rules_on_delete = true
 
   tags = merge(
     var.tags,
