@@ -103,12 +103,13 @@ resource "aws_sagemaker_domain" "main" {
     }
 
     # Kernel Gateway settings for notebook instances
+    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
     kernel_gateway_app_settings {
       default_resource_spec {
         instance_type        = var.kernel_gateway_instance_type
-        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
         lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
 
     # JupyterServer settings for backward compatibility
@@ -375,10 +376,10 @@ resource "aws_sagemaker_space" "general_purpose_template" {
     }
 
     # Kernel Gateway settings for R and Spark kernels
+    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
     kernel_gateway_app_settings {
       default_resource_spec {
         instance_type        = "ml.m5.large"
-        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
         lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
 
@@ -422,10 +423,10 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
     }
 
     # Kernel Gateway settings for R and Spark kernels with GPU support
+    # Note: No sagemaker_image_arn specified - lifecycle config installs R, Spark, and Neptune
     kernel_gateway_app_settings {
       default_resource_spec {
         instance_type        = "ml.g4dn.xlarge"
-        sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
         lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
 
