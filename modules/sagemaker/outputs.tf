@@ -49,28 +49,18 @@ output "govcloud_compatible_instance_types" {
 }
 
 output "general_purpose_space_name" {
-  description = "Name of the general purpose CPU space template"
+  description = "Name of the general purpose CPU space template with R and Spark kernels (via lifecycle config)"
   value       = var.create_space_templates ? aws_sagemaker_space.general_purpose_template[0].space_name : null
 }
 
 output "accelerated_compute_space_name" {
-  description = "Name of the accelerated compute (GPU) space template"
+  description = "Name of the accelerated compute (GPU) space template with R and Spark kernels (via lifecycle config)"
   value       = var.create_space_templates ? aws_sagemaker_space.accelerated_compute_template[0].space_name : null
 }
 
-output "r_kernel_config_name" {
-  description = "Name of the R kernel app image config"
-  value       = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
-}
-
-output "rspark_kernel_config_name" {
-  description = "Name of the RSpark kernel app image config"
-  value       = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
-}
-
-output "neptune_graph_kernel_config_name" {
-  description = "Name of the Neptune graph notebook kernel app image config"
-  value       = var.enable_neptune_kernel ? aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name : null
+output "lifecycle_config_name" {
+  description = "Name of the lifecycle config that installs R, Spark, and Neptune kernels"
+  value       = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.studio_lifecycle_config_name
 }
 
 output "general_purpose_instance_types" {

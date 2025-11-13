@@ -93,18 +93,7 @@ resource "aws_sagemaker_domain" "main" {
       default_resource_spec {
         instance_type        = var.kernel_gateway_instance_type
         sagemaker_image_arn  = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
-        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.emr_connection.arn
-      }
-
-      # Custom image configurations for R and RSpark
-      custom_image {
-        image_name            = "r-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
-      }
-
-      custom_image {
-        image_name            = "rspark-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
     }
 
@@ -158,57 +147,74 @@ resource "aws_sagemaker_user_profile" "default" {
   }
 }
 
-# SageMaker Studio Lifecycle Config for EMR connection
-resource "aws_sagemaker_studio_lifecycle_config" "emr_connection" {
-  studio_lifecycle_config_name     = "${var.project_name}-emr-connection"
-  studio_lifecycle_config_app_type = "JupyterServer"
+# SageMaker Studio Lifecycle Config for R, Spark, and Neptune setup
+resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
+  studio_lifecycle_config_name     = "${var.project_name}-r-spark-setup"
+  studio_lifecycle_config_app_type = "KernelGateway"
   studio_lifecycle_config_content = base64encode(<<-EOF
     #!/bin/bash
     set -e
 
-    # Install Sparkmagic for EMR connection
-    pip install sparkmagic
+    # Install R kernel and packages
+    conda install -y -c conda-forge r-base r-irkernel r-tidyverse r-ggplot2 r-caret
 
-    # Configure Sparkmagic
-    mkdir -p ~/.sparkmagic
-    cat > ~/.sparkmagic/config.json <<EOL
-    {
-      "kernel_python_credentials" : {
-        "username": "",
-        "password": "",
-        "url": "http://${var.emr_master_dns}:8998",
-        "auth": "None"
-      },
-      "kernel_scala_credentials" : {
-        "username": "",
-        "password": "",
-        "url": "http://${var.emr_master_dns}:8998",
-        "auth": "None"
-      },
-      "custom_headers" : {
-        "X-Requested-By": "livy"
-      },
-      "session_configs" : {
-        "driverMemory": "1000M",
-        "executorCores": 2
+    # Install Spark and PySpark
+    pip install pyspark findspark
+
+    # Install Sparkmagic for EMR connection (if EMR is configured)
+    if [ -n "${var.emr_master_dns}" ]; then
+      pip install sparkmagic
+
+      # Configure Sparkmagic
+      mkdir -p ~/.sparkmagic
+      cat > ~/.sparkmagic/config.json <<EOL
+      {
+        "kernel_python_credentials" : {
+          "username": "",
+          "password": "",
+          "url": "http://${var.emr_master_dns}:8998",
+          "auth": "None"
+        },
+        "kernel_scala_credentials" : {
+          "username": "",
+          "password": "",
+          "url": "http://${var.emr_master_dns}:8998",
+          "auth": "None"
+        },
+        "kernel_r_credentials" : {
+          "username": "",
+          "password": "",
+          "url": "http://${var.emr_master_dns}:8998",
+          "auth": "None"
+        },
+        "custom_headers" : {
+          "X-Requested-By": "livy"
+        },
+        "session_configs" : {
+          "driverMemory": "1000M",
+          "executorCores": 2
+        }
       }
-    }
-    EOL
+EOL
 
-    # Install Sparkmagic kernels
-    cd $(pip show sparkmagic | grep Location | cut -d' ' -f2)
-    jupyter-kernelspec install sparkmagic/kernels/sparkkernel
-    jupyter-kernelspec install sparkmagic/kernels/pysparkkernel
-    jupyter-kernelspec install sparkmagic/kernels/sparkrkernel
+      # Install Sparkmagic kernels
+      jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/pysparkkernel
+      jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/sparkrkernel
+    fi
 
-    echo "EMR connection setup complete"
+    # Install Neptune Python libraries (if Neptune is enabled)
+    if [ "${var.enable_neptune_kernel}" = "true" ]; then
+      pip install gremlinpython SPARQLWrapper neptune-python-utils
+    fi
+
+    echo "R, Spark, and Neptune setup complete"
   EOF
   )
 
   tags = merge(
     var.tags,
     {
-      Name = "${var.project_name}-emr-connection-lifecycle"
+      Name = "${var.project_name}-r-spark-lifecycle"
     }
   )
 }
@@ -285,81 +291,12 @@ resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "emr_setup" {
   )
 }
 
-# App Image Config for R Kernel
-resource "aws_sagemaker_app_image_config" "r_kernel" {
-  app_image_config_name = "${var.project_name}-r-kernel-config"
-
-  kernel_gateway_image_config {
-    kernel_spec {
-      name         = "ir"
-      display_name = "R"
-    }
-
-    file_system_config {
-      default_gid = 100
-      default_uid = 1000
-      mount_path  = "/root"
-    }
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-r-kernel-config"
-    }
-  )
-}
-
-# App Image Config for RSpark Kernel
-resource "aws_sagemaker_app_image_config" "rspark_kernel" {
-  app_image_config_name = "${var.project_name}-rspark-kernel-config"
-
-  kernel_gateway_image_config {
-    kernel_spec {
-      name         = "sparkr"
-      display_name = "R with Spark"
-    }
-
-    file_system_config {
-      default_gid = 100
-      default_uid = 1000
-      mount_path  = "/root"
-    }
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-rspark-kernel-config"
-    }
-  )
-}
-
-# App Image Config for Neptune Graph Notebook Kernel
-resource "aws_sagemaker_app_image_config" "neptune_graph" {
-  count                 = var.enable_neptune_kernel ? 1 : 0
-  app_image_config_name = "${var.project_name}-neptune-graph-config"
-
-  kernel_gateway_image_config {
-    kernel_spec {
-      name         = "python3"
-      display_name = "Neptune Graph (Python 3)"
-    }
-
-    file_system_config {
-      default_gid = 100
-      default_uid = 1000
-      mount_path  = "/root"
-    }
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-neptune-graph-config"
-    }
-  )
-}
+# Note: Custom kernels for R, Spark, and Neptune are installed via lifecycle configuration
+# rather than custom SageMaker images. This avoids the need to build and maintain Docker images.
+# The lifecycle config installs:
+# - R kernel (via conda)
+# - Sparkmagic kernels for PySpark and SparkR (via pip)
+# - Neptune Python libraries (gremlinpython, SPARQLWrapper)
 
 # Space Settings Template for General Purpose CPU Instances
 resource "aws_sagemaker_space" "general_purpose_template" {
@@ -374,26 +311,7 @@ resource "aws_sagemaker_space" "general_purpose_template" {
         sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
       }
 
-      # Include all custom kernels
-      custom_image {
-        image_name            = "r-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
-      }
-
-      custom_image {
-        image_name            = "rspark-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
-      }
-
-      dynamic "custom_image" {
-        for_each = var.enable_neptune_kernel ? [1] : []
-        content {
-          image_name            = "neptune-graph"
-          app_image_config_name = aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name
-        }
-      }
-
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
 
     jupyter_server_app_settings {
@@ -426,26 +344,7 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
         sagemaker_image_arn = "arn:aws-us-gov:sagemaker:${data.aws_region.current.name}:aws:image/sagemaker-data-science-310-v1"
       }
 
-      # Include all custom kernels
-      custom_image {
-        image_name            = "r-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.r_kernel.app_image_config_name
-      }
-
-      custom_image {
-        image_name            = "rspark-kernel"
-        app_image_config_name = aws_sagemaker_app_image_config.rspark_kernel.app_image_config_name
-      }
-
-      dynamic "custom_image" {
-        for_each = var.enable_neptune_kernel ? [1] : []
-        content {
-          image_name            = "neptune-graph"
-          app_image_config_name = aws_sagemaker_app_image_config.neptune_graph[0].app_image_config_name
-        }
-      }
-
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.emr_connection.arn]
+      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
     }
 
     jupyter_server_app_settings {
@@ -460,7 +359,7 @@ resource "aws_sagemaker_space" "accelerated_compute_template" {
     {
       Name        = "${var.project_name}-accelerated-compute-space"
       Type        = "AcceleratedCompute"
-      Description = "Template for GPU-accelerated workloads with R and RSpark kernels"
+      Description = "Template for GPU-accelerated workloads with R and Spark kernels"
     }
   )
 }

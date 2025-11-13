@@ -108,23 +108,18 @@ output "sagemaker_model_registry_name" {
 }
 
 output "sagemaker_general_purpose_space" {
-  description = "Name of the general purpose CPU space template with R and RSpark kernels"
+  description = "Name of the general purpose CPU space template with R and Spark kernels installed via lifecycle config"
   value       = module.sagemaker.general_purpose_space_name
 }
 
 output "sagemaker_accelerated_compute_space" {
-  description = "Name of the accelerated compute (GPU) space template with R and RSpark kernels"
+  description = "Name of the accelerated compute (GPU) space template with R and Spark kernels installed via lifecycle config"
   value       = module.sagemaker.accelerated_compute_space_name
 }
 
-output "sagemaker_r_kernel_config" {
-  description = "Name of the R kernel app image configuration"
-  value       = module.sagemaker.r_kernel_config_name
-}
-
-output "sagemaker_rspark_kernel_config" {
-  description = "Name of the RSpark kernel app image configuration"
-  value       = module.sagemaker.rspark_kernel_config_name
+output "sagemaker_lifecycle_config" {
+  description = "Name of the lifecycle configuration that installs R, Spark, and Neptune kernels"
+  value       = module.sagemaker.lifecycle_config_name
 }
 
 # EMR Outputs
