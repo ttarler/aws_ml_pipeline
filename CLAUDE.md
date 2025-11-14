@@ -244,6 +244,11 @@ To debug lifecycle config issues in SageMaker Studio, check the logs in:
 - `/tmp/sparkmagic-install.log` - Sparkmagic installation
 - `/tmp/neptune-install.log` - Neptune libraries
 
+**QuickSight permissions length error (1-256 range)**: If you get an error about permissions length when deploying QuickSight resources, it's because the `quicksight_user_arn` variable is empty. The QuickSight resources now use dynamic permissions blocks that skip permission configuration if no user ARN is provided. You can:
+1. Leave `quicksight_user_arn` empty (default) - resources will be created without user permissions
+2. Add permissions later via AWS Console or AWS CLI
+3. Or set `quicksight_user_arn` in terraform.tfvars to your QuickSight user ARN (format: `arn:aws:quicksight:region:account-id:user/namespace/username`)
+
 **CodeCommit authentication prompts for credentials**: If you don't have an IAM user (using IAM roles, SSO, or federated auth), you'll be prompted for credentials when pushing to CodeCommit. Solutions:
 
 1. **Install git-remote-codecommit** (Recommended for role-based auth):

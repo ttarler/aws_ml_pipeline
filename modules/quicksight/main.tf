@@ -19,16 +19,20 @@ resource "aws_quicksight_data_source" "s3_data_source" {
     }
   }
 
-  permission {
-    principal = var.quicksight_user_arn
-    actions = [
-      "quicksight:DescribeDataSource",
-      "quicksight:DescribeDataSourcePermissions",
-      "quicksight:PassDataSource",
-      "quicksight:UpdateDataSource",
-      "quicksight:DeleteDataSource",
-      "quicksight:UpdateDataSourcePermissions"
-    ]
+  # Only add permissions if user ARN is provided
+  dynamic "permission" {
+    for_each = var.quicksight_user_arn != "" ? [1] : []
+    content {
+      principal = var.quicksight_user_arn
+      actions = [
+        "quicksight:DescribeDataSource",
+        "quicksight:DescribeDataSourcePermissions",
+        "quicksight:PassDataSource",
+        "quicksight:UpdateDataSource",
+        "quicksight:DeleteDataSource",
+        "quicksight:UpdateDataSourcePermissions"
+      ]
+    }
   }
 
   tags = merge(
@@ -52,16 +56,20 @@ resource "aws_quicksight_data_source" "athena_data_source" {
     }
   }
 
-  permission {
-    principal = var.quicksight_user_arn
-    actions = [
-      "quicksight:DescribeDataSource",
-      "quicksight:DescribeDataSourcePermissions",
-      "quicksight:PassDataSource",
-      "quicksight:UpdateDataSource",
-      "quicksight:DeleteDataSource",
-      "quicksight:UpdateDataSourcePermissions"
-    ]
+  # Only add permissions if user ARN is provided
+  dynamic "permission" {
+    for_each = var.quicksight_user_arn != "" ? [1] : []
+    content {
+      principal = var.quicksight_user_arn
+      actions = [
+        "quicksight:DescribeDataSource",
+        "quicksight:DescribeDataSourcePermissions",
+        "quicksight:PassDataSource",
+        "quicksight:UpdateDataSource",
+        "quicksight:DeleteDataSource",
+        "quicksight:UpdateDataSourcePermissions"
+      ]
+    }
   }
 
   tags = merge(
@@ -78,18 +86,22 @@ resource "aws_quicksight_folder" "main" {
   name        = "${var.project_name} Dashboards"
   folder_type = "SHARED"
 
-  permissions {
-    principal = var.quicksight_user_arn
-    actions = [
-      "quicksight:CreateFolder",
-      "quicksight:DescribeFolder",
-      "quicksight:UpdateFolder",
-      "quicksight:DeleteFolder",
-      "quicksight:CreateFolderMembership",
-      "quicksight:DeleteFolderMembership",
-      "quicksight:DescribeFolderPermissions",
-      "quicksight:UpdateFolderPermissions"
-    ]
+  # Only add permissions if user ARN is provided
+  dynamic "permissions" {
+    for_each = var.quicksight_user_arn != "" ? [1] : []
+    content {
+      principal = var.quicksight_user_arn
+      actions = [
+        "quicksight:CreateFolder",
+        "quicksight:DescribeFolder",
+        "quicksight:UpdateFolder",
+        "quicksight:DeleteFolder",
+        "quicksight:CreateFolderMembership",
+        "quicksight:DeleteFolderMembership",
+        "quicksight:DescribeFolderPermissions",
+        "quicksight:UpdateFolderPermissions"
+      ]
+    }
   }
 
   tags = merge(

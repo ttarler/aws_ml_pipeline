@@ -364,7 +364,7 @@ variable "enable_quicksight" {
 }
 
 variable "quicksight_user_arn" {
-  description = "ARN of the QuickSight user (format: arn:aws:quicksight:region:account-id:user/namespace/username). Leave empty to skip user permissions."
+  description = "ARN of the QuickSight user for data source and folder permissions (format: arn:aws:quicksight:region:account-id:user/namespace/username). Leave empty to create resources without user-specific permissions - you can add permissions later via AWS console or CLI."
   type        = string
   default     = ""
 }
