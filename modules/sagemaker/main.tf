@@ -167,14 +167,17 @@ resource "aws_sagemaker_domain" "main" {
     }
 
     # Kernel Gateway settings for notebook instances
-    # Uses default SageMaker Studio images with lifecycle config for R and Spark
+    # Uses default SageMaker Studio images with lifecycle configs for R/Spark and barebones Python
     kernel_gateway_app_settings {
       default_resource_spec {
         instance_type        = var.kernel_gateway_instance_type
         lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
 
-      lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
+      lifecycle_config_arns = [
+        aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn,
+        aws_sagemaker_studio_lifecycle_config.python_barebones.arn
+      ]
     }
 
     # JupyterServer settings for backward compatibility
@@ -193,7 +196,8 @@ resource "aws_sagemaker_domain" "main" {
   )
 
   depends_on = [
-    aws_sagemaker_studio_lifecycle_config.r_and_spark_setup
+    aws_sagemaker_studio_lifecycle_config.r_and_spark_setup,
+    aws_sagemaker_studio_lifecycle_config.python_barebones
   ]
 }
 
@@ -237,46 +241,41 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
   studio_lifecycle_config_name     = "${var.project_name}-r-spark-setup"
   studio_lifecycle_config_app_type = "KernelGateway"
   studio_lifecycle_config_content = base64encode(<<-EOF
-    #!/bin/bash
-    # Exit on error for critical commands only
-    set +e
+#!/bin/bash
 
-    echo "=========================================="
-    echo "Installing R Kernel and Data Science Tools"
-    echo "=========================================="
+echo "=========================================="
+echo "Installing R Kernel and Data Science Tools"
+echo "=========================================="
 
-    # Install R kernel and essential packages
-    echo "Installing R base and IRkernel..."
-    conda install -y -c conda-forge r-base r-irkernel r-essentials 2>&1 | tee /tmp/conda-install.log
-    if [ $? -ne 0 ]; then
-      echo "⚠️  Warning: Some conda packages failed to install, continuing..."
-    fi
+# Install R kernel and essential packages
+echo "Installing R base and IRkernel..."
+conda install -y -c conda-forge r-base r-irkernel r-essentials 2>&1 | tee /tmp/conda-install.log || echo "Warning: Some conda packages failed to install, continuing..."
 
-    # Register R kernel with Jupyter
-    echo "Registering R kernel with Jupyter..."
-    R -e "IRkernel::installspec(user = FALSE, displayname = 'R')" 2>&1 | tee /tmp/r-kernel-install.log
-    if [ $? -ne 0 ]; then
-      echo "⚠️  Warning: R kernel registration failed, trying with user=TRUE..."
-      R -e "IRkernel::installspec(user = TRUE, displayname = 'R')" || echo "⚠️  R kernel installation failed"
-    fi
+# Register R kernel with Jupyter
+echo "Registering R kernel with Jupyter..."
+R -e "IRkernel::installspec(user = FALSE, displayname = 'R')" 2>&1 | tee /tmp/r-kernel-install.log
+if [ $? -ne 0 ]; then
+  echo "Warning: R kernel registration failed, trying with user=TRUE..."
+  R -e "IRkernel::installspec(user = TRUE, displayname = 'R')" || echo "R kernel installation failed"
+fi
 
-    # Install additional R packages (non-critical)
-    echo "Installing additional R packages..."
-    R -e "install.packages(c('tidyverse', 'ggplot2', 'data.table', 'dplyr'), repos='https://cloud.r-project.org/', quiet=TRUE)" 2>&1 | tee /tmp/r-packages.log || echo "⚠️  Some R packages failed to install"
+# Install additional R packages (non-critical)
+echo "Installing additional R packages..."
+R -e "install.packages(c('tidyverse', 'ggplot2', 'data.table', 'dplyr'), repos='https://cloud.r-project.org/', quiet=TRUE)" 2>&1 | tee /tmp/r-packages.log || echo "Some R packages failed to install"
 
-    # Install PySpark (critical for Spark integration)
-    echo "Installing PySpark..."
-    pip install --quiet pyspark findspark py4j 2>&1 | tee /tmp/pip-install.log || echo "⚠️  PySpark installation failed"
+# Install PySpark (critical for Spark integration)
+echo "Installing PySpark..."
+pip install --quiet pyspark findspark py4j 2>&1 | tee /tmp/pip-install.log || echo "PySpark installation failed"
 
-    # Install Sparkmagic for EMR connection (if EMR is configured)
-    if [ -n "${var.emr_master_dns}" ]; then
-      echo "Configuring Sparkmagic for EMR connection..."
-      pip install --quiet sparkmagic 2>&1 | tee /tmp/sparkmagic-install.log
+# Install Sparkmagic for EMR connection (if EMR is configured)
+if [ -n "${var.emr_master_dns}" ]; then
+  echo "Configuring Sparkmagic for EMR connection..."
+  pip install --quiet sparkmagic 2>&1 | tee /tmp/sparkmagic-install.log
 
-      if [ $? -eq 0 ]; then
-        # Configure Sparkmagic
-        mkdir -p ~/.sparkmagic
-        cat > ~/.sparkmagic/config.json <<EOL
+  if [ $? -eq 0 ]; then
+    # Configure Sparkmagic
+    mkdir -p ~/.sparkmagic
+    cat > ~/.sparkmagic/config.json <<EOL
 {
   "kernel_python_credentials" : {
     "username": "",
@@ -306,45 +305,81 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
 }
 EOL
 
-        # Install Sparkmagic kernels
-        echo "Installing Sparkmagic kernels..."
-        SPARKMAGIC_LOC=$(pip show sparkmagic 2>/dev/null | grep Location | cut -d' ' -f2)
-        if [ -n "$SPARKMAGIC_LOC" ]; then
-          jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/pysparkkernel" 2>&1 || echo "⚠️  PySpark kernel install failed"
-          jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/sparkrkernel" 2>&1 || echo "⚠️  SparkR kernel install failed"
-        fi
-      else
-        echo "⚠️  Sparkmagic installation failed, skipping EMR kernels"
-      fi
+    # Install Sparkmagic kernels
+    echo "Installing Sparkmagic kernels..."
+    SPARKMAGIC_LOC=$(pip show sparkmagic 2>/dev/null | grep Location | cut -d' ' -f2)
+    if [ -n "$SPARKMAGIC_LOC" ]; then
+      jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/pysparkkernel" 2>&1 || echo "PySpark kernel install failed"
+      jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/sparkrkernel" 2>&1 || echo "SparkR kernel install failed"
     fi
+  else
+    echo "Sparkmagic installation failed, skipping EMR kernels"
+  fi
+fi
 
-    # Install Neptune Python libraries (if Neptune is enabled)
-    if [ "${var.enable_neptune_kernel}" = "true" ]; then
-      echo "Installing Neptune graph database libraries..."
-      pip install --quiet gremlinpython SPARQLWrapper neptune-python-utils 2>&1 | tee /tmp/neptune-install.log || echo "⚠️  Neptune libraries installation failed"
-    fi
+# Install Neptune Python libraries (if Neptune is enabled)
+if [ "${var.enable_neptune_kernel}" = "true" ]; then
+  echo "Installing Neptune graph database libraries..."
+  pip install --quiet gremlinpython SPARQLWrapper neptune-python-utils 2>&1 | tee /tmp/neptune-install.log || echo "Neptune libraries installation failed"
+fi
 
-    # Verify installations
-    echo ""
-    echo "=========================================="
-    echo "Kernel Installation Summary:"
-    echo "=========================================="
-    jupyter kernelspec list 2>&1 || echo "Unable to list kernels"
+# Verify installations
+echo ""
+echo "=========================================="
+echo "Kernel Installation Summary:"
+echo "=========================================="
+jupyter kernelspec list 2>&1 || echo "Unable to list kernels"
 
-    echo ""
-    echo "✅ Lifecycle configuration complete!"
-    echo "Check /tmp/*.log for detailed installation logs"
-    echo "=========================================="
-
-    # Always exit successfully to allow kernel to start
-    exit 0
-  EOF
+echo ""
+echo "Lifecycle configuration complete"
+echo "Check /tmp/*.log for detailed installation logs"
+echo "=========================================="
+EOF
   )
 
   tags = merge(
     var.tags,
     {
       Name = "${var.project_name}-r-spark-lifecycle"
+    }
+  )
+}
+
+# Barebones Python Kernel Lifecycle Configuration
+resource "aws_sagemaker_studio_lifecycle_config" "python_barebones" {
+  studio_lifecycle_config_name     = "${var.project_name}-python-barebones"
+  studio_lifecycle_config_app_type = "KernelGateway"
+  studio_lifecycle_config_content = base64encode(<<-EOF
+#!/bin/bash
+# Barebones Python kernel - minimal setup
+
+echo "=========================================="
+echo "Barebones Python Kernel Startup"
+echo "=========================================="
+
+# Verify Python is available
+echo "Python version:"
+python --version || true
+
+# Verify pip is available
+echo "Pip version:"
+pip --version || true
+
+# List available kernels
+echo ""
+echo "Available kernels:"
+jupyter kernelspec list 2>&1 || echo "Unable to list kernels"
+
+echo ""
+echo "Barebones Python kernel ready"
+echo "=========================================="
+EOF
+  )
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-python-barebones-lifecycle"
     }
   )
 }

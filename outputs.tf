@@ -117,6 +117,21 @@ output "sagemaker_lifecycle_config" {
   value       = module.sagemaker.lifecycle_config_name
 }
 
+output "sagemaker_lifecycle_config_r_spark_arn" {
+  description = "ARN of the R and Spark lifecycle configuration"
+  value       = module.sagemaker.lifecycle_config_r_spark_arn
+}
+
+output "sagemaker_lifecycle_config_python_barebones" {
+  description = "Name of the barebones Python kernel lifecycle configuration"
+  value       = module.sagemaker.lifecycle_config_python_barebones_name
+}
+
+output "sagemaker_lifecycle_config_python_barebones_arn" {
+  description = "ARN of the barebones Python kernel lifecycle configuration"
+  value       = module.sagemaker.lifecycle_config_python_barebones_arn
+}
+
 # EMR Outputs
 output "emr_cluster_id" {
   description = "ID of the EMR cluster (if created)"

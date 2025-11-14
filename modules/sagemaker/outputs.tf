@@ -58,6 +58,21 @@ output "lifecycle_config_name" {
   value       = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.studio_lifecycle_config_name
 }
 
+output "lifecycle_config_r_spark_arn" {
+  description = "ARN of the R and Spark lifecycle configuration"
+  value       = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
+}
+
+output "lifecycle_config_python_barebones_name" {
+  description = "Name of the barebones Python kernel lifecycle config"
+  value       = aws_sagemaker_studio_lifecycle_config.python_barebones.studio_lifecycle_config_name
+}
+
+output "lifecycle_config_python_barebones_arn" {
+  description = "ARN of the barebones Python kernel lifecycle configuration"
+  value       = aws_sagemaker_studio_lifecycle_config.python_barebones.arn
+}
+
 output "general_purpose_instance_types" {
   description = "List of general purpose CPU instance types for spaces"
   value       = local.general_purpose_instances
