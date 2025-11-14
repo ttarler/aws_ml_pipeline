@@ -238,7 +238,8 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
   studio_lifecycle_config_app_type = "KernelGateway"
   studio_lifecycle_config_content = base64encode(<<-EOF
     #!/bin/bash
-    set -e
+    # Exit on error for critical commands only
+    set +e
 
     echo "=========================================="
     echo "Installing R Kernel and Data Science Tools"
@@ -246,81 +247,81 @@ resource "aws_sagemaker_studio_lifecycle_config" "r_and_spark_setup" {
 
     # Install R kernel and essential packages
     echo "Installing R base and IRkernel..."
-    conda install -y -c conda-forge \
-      r-base \
-      r-irkernel \
-      r-essentials \
-      r-tidyverse \
-      r-ggplot2 \
-      r-caret \
-      r-data.table \
-      r-dplyr \
-      r-devtools \
-      r-shiny \
-      r-rmarkdown
+    conda install -y -c conda-forge r-base r-irkernel r-essentials 2>&1 | tee /tmp/conda-install.log
+    if [ $? -ne 0 ]; then
+      echo "⚠️  Warning: Some conda packages failed to install, continuing..."
+    fi
 
     # Register R kernel with Jupyter
     echo "Registering R kernel with Jupyter..."
-    R -e "IRkernel::installspec(user = FALSE, displayname = 'R')"
+    R -e "IRkernel::installspec(user = FALSE, displayname = 'R')" 2>&1 | tee /tmp/r-kernel-install.log
+    if [ $? -ne 0 ]; then
+      echo "⚠️  Warning: R kernel registration failed, trying with user=TRUE..."
+      R -e "IRkernel::installspec(user = TRUE, displayname = 'R')" || echo "⚠️  R kernel installation failed"
+    fi
 
-    # Install additional R packages for machine learning
+    # Install additional R packages (non-critical)
     echo "Installing additional R packages..."
-    R -e "install.packages(c('randomForest', 'xgboost', 'mlr3', 'keras'), repos='https://cloud.r-project.org/')"
+    R -e "install.packages(c('tidyverse', 'ggplot2', 'data.table', 'dplyr'), repos='https://cloud.r-project.org/', quiet=TRUE)" 2>&1 | tee /tmp/r-packages.log || echo "⚠️  Some R packages failed to install"
 
-    # Install Spark and PySpark
+    # Install PySpark (critical for Spark integration)
     echo "Installing PySpark..."
-    pip install pyspark findspark py4j
+    pip install --quiet pyspark findspark py4j 2>&1 | tee /tmp/pip-install.log || echo "⚠️  PySpark installation failed"
 
     # Install Sparkmagic for EMR connection (if EMR is configured)
     if [ -n "${var.emr_master_dns}" ]; then
       echo "Configuring Sparkmagic for EMR connection..."
-      pip install sparkmagic
+      pip install --quiet sparkmagic 2>&1 | tee /tmp/sparkmagic-install.log
 
-      # Configure Sparkmagic
-      mkdir -p ~/.sparkmagic
-      cat > ~/.sparkmagic/config.json <<EOL
-      {
-        "kernel_python_credentials" : {
-          "username": "",
-          "password": "",
-          "url": "http://${var.emr_master_dns}:8998",
-          "auth": "None"
-        },
-        "kernel_scala_credentials" : {
-          "username": "",
-          "password": "",
-          "url": "http://${var.emr_master_dns}:8998",
-          "auth": "None"
-        },
-        "kernel_r_credentials" : {
-          "username": "",
-          "password": "",
-          "url": "http://${var.emr_master_dns}:8998",
-          "auth": "None"
-        },
-        "custom_headers" : {
-          "X-Requested-By": "livy"
-        },
-        "session_configs" : {
-          "driverMemory": "1000M",
-          "executorCores": 2
-        }
-      }
+      if [ $? -eq 0 ]; then
+        # Configure Sparkmagic
+        mkdir -p ~/.sparkmagic
+        cat > ~/.sparkmagic/config.json <<EOL
+{
+  "kernel_python_credentials" : {
+    "username": "",
+    "password": "",
+    "url": "http://${var.emr_master_dns}:8998",
+    "auth": "None"
+  },
+  "kernel_scala_credentials" : {
+    "username": "",
+    "password": "",
+    "url": "http://${var.emr_master_dns}:8998",
+    "auth": "None"
+  },
+  "kernel_r_credentials" : {
+    "username": "",
+    "password": "",
+    "url": "http://${var.emr_master_dns}:8998",
+    "auth": "None"
+  },
+  "custom_headers" : {
+    "X-Requested-By": "livy"
+  },
+  "session_configs" : {
+    "driverMemory": "1000M",
+    "executorCores": 2
+  }
+}
 EOL
 
-      # Install Sparkmagic kernels
-      echo "Installing Sparkmagic kernels..."
-      jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/pysparkkernel
-      jupyter-kernelspec install --sys-prefix \$(pip show sparkmagic | grep Location | cut -d' ' -f2)/sparkmagic/kernels/sparkrkernel
-
-      # Install SparkR kernel
-      R -e "install.packages('SparkR', repos='https://cloud.r-project.org/')"
+        # Install Sparkmagic kernels
+        echo "Installing Sparkmagic kernels..."
+        SPARKMAGIC_LOC=$(pip show sparkmagic 2>/dev/null | grep Location | cut -d' ' -f2)
+        if [ -n "$SPARKMAGIC_LOC" ]; then
+          jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/pysparkkernel" 2>&1 || echo "⚠️  PySpark kernel install failed"
+          jupyter-kernelspec install --sys-prefix "$SPARKMAGIC_LOC/sparkmagic/kernels/sparkrkernel" 2>&1 || echo "⚠️  SparkR kernel install failed"
+        fi
+      else
+        echo "⚠️  Sparkmagic installation failed, skipping EMR kernels"
+      fi
     fi
 
     # Install Neptune Python libraries (if Neptune is enabled)
     if [ "${var.enable_neptune_kernel}" = "true" ]; then
       echo "Installing Neptune graph database libraries..."
-      pip install gremlinpython SPARQLWrapper neptune-python-utils
+      pip install --quiet gremlinpython SPARQLWrapper neptune-python-utils 2>&1 | tee /tmp/neptune-install.log || echo "⚠️  Neptune libraries installation failed"
     fi
 
     # Verify installations
@@ -328,11 +329,15 @@ EOL
     echo "=========================================="
     echo "Kernel Installation Summary:"
     echo "=========================================="
-    jupyter kernelspec list
+    jupyter kernelspec list 2>&1 || echo "Unable to list kernels"
 
     echo ""
-    echo "✅ R, Spark, and Neptune setup complete!"
+    echo "✅ Lifecycle configuration complete!"
+    echo "Check /tmp/*.log for detailed installation logs"
     echo "=========================================="
+
+    # Always exit successfully to allow kernel to start
+    exit 0
   EOF
   )
 

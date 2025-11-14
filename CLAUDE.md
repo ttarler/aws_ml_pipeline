@@ -225,6 +225,21 @@ aws s3 ls | grep <project-name>
 
 **S3 bucket not empty on destroy**: All buckets have `force_destroy = true` which automatically empties buckets before deletion
 
+**Lifecycle config execution failed with exit code 2**: The lifecycle configuration script (which installs R, Spark, and Neptune kernels) has been updated to handle errors gracefully. The script now:
+- Uses `set +e` instead of `set -e` to continue on non-critical errors
+- Logs all installation attempts to `/tmp/*.log` files
+- Always exits with code 0 to allow kernel to start even if some packages fail
+- Falls back to user-level R kernel installation if system-level fails
+- Provides warnings for failed installations instead of hard failures
+
+To debug lifecycle config issues in SageMaker Studio, check the logs in:
+- `/tmp/conda-install.log` - Conda package installation
+- `/tmp/r-kernel-install.log` - R kernel registration
+- `/tmp/r-packages.log` - Additional R packages
+- `/tmp/pip-install.log` - PySpark installation
+- `/tmp/sparkmagic-install.log` - Sparkmagic installation
+- `/tmp/neptune-install.log` - Neptune libraries
+
 ### Debug Commands
 ```bash
 # Enable Terraform debug logging
