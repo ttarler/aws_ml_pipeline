@@ -45,6 +45,10 @@ terraform output -raw <output_name>
 # Push code to CodeCommit and trigger Checkov security scan
 ./scripts/push-to-codecommit.sh us-gov-west-1
 
+# For IAM role-based auth (no IAM user), install git-remote-codecommit first:
+pip install git-remote-codecommit
+./scripts/push-to-codecommit.sh us-gov-west-1
+
 # Copy SageMaker images from public ECR to private ECR (optional)
 ./scripts/copy-sagemaker-images.sh us-gov-west-1 <account-id> <project-name>
 
@@ -239,6 +243,35 @@ To debug lifecycle config issues in SageMaker Studio, check the logs in:
 - `/tmp/pip-install.log` - PySpark installation
 - `/tmp/sparkmagic-install.log` - Sparkmagic installation
 - `/tmp/neptune-install.log` - Neptune libraries
+
+**CodeCommit authentication prompts for credentials**: If you don't have an IAM user (using IAM roles, SSO, or federated auth), you'll be prompted for credentials when pushing to CodeCommit. Solutions:
+
+1. **Install git-remote-codecommit** (Recommended for role-based auth):
+   ```bash
+   pip install git-remote-codecommit
+   ./scripts/push-to-codecommit.sh us-gov-west-1
+   ```
+   The script will automatically detect and use `codecommit://` protocol instead of `https://`
+
+2. **Verify AWS credentials work**:
+   ```bash
+   aws sts get-caller-identity --region us-gov-west-1
+   ```
+   If this fails, configure AWS CLI: `aws configure`
+
+3. **Check IAM permissions** - Your role/user needs:
+   - `codecommit:GitPull`
+   - `codecommit:GitPush`
+
+4. **Manual git-remote-codecommit usage**:
+   ```bash
+   # After installing git-remote-codecommit
+   git clone codecommit::us-gov-west-1://your-repo-name
+
+   # Or add as remote
+   git remote add codecommit codecommit::us-gov-west-1://your-repo-name
+   git push codecommit main
+   ```
 
 ### Debug Commands
 ```bash

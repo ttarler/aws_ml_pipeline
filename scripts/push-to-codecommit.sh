@@ -39,24 +39,39 @@ if [ ! -f "terraform.tfstate" ]; then
     exit 1
 fi
 
-REPO_URL=$(terraform output -raw codecommit_clone_url_http 2>/dev/null || echo "")
+REPO_NAME=$(terraform output -raw codecommit_repository_name 2>/dev/null || echo "")
 
-if [ -z "$REPO_URL" ]; then
-    echo "❌ ERROR: Could not get CodeCommit repository URL"
+if [ -z "$REPO_NAME" ]; then
+    echo "❌ ERROR: Could not get CodeCommit repository name"
     echo "Make sure the codecommit module is included and applied"
     exit 1
 fi
 
-REPO_NAME=$(terraform output -raw codecommit_repository_name 2>/dev/null || echo "")
+# Check if git-remote-codecommit is installed
+if command -v git-remote-codecommit &> /dev/null; then
+    echo "✅ git-remote-codecommit is installed, using codecommit:// protocol"
+    REPO_URL="codecommit::$REGION://$REPO_NAME"
+    USE_GRC=true
+else
+    echo "⚠️  git-remote-codecommit not found, falling back to HTTPS with credential helper"
+    echo "   For better IAM role support, install: pip install git-remote-codecommit"
+    REPO_URL=$(terraform output -raw codecommit_clone_url_http 2>/dev/null || echo "")
+    USE_GRC=false
+
+    if [ -z "$REPO_URL" ]; then
+        echo "❌ ERROR: Could not get CodeCommit repository URL"
+        exit 1
+    fi
+
+    # Configure git credential helper for CodeCommit (HTTPS method)
+    echo "🔧 Configuring git credential helper for CodeCommit..."
+    git config --global credential.helper '!aws codecommit credential-helper $@'
+    git config --global credential.UseHttpPath true
+fi
 
 echo "✅ Repository URL: $REPO_URL"
 echo "✅ Repository Name: $REPO_NAME"
 echo
-
-# Configure git credential helper for CodeCommit
-echo "🔧 Configuring git credential helper for CodeCommit..."
-git config --global credential.helper '!aws codecommit credential-helper $@'
-git config --global credential.UseHttpPath true
 
 # Check if already in a git repository
 if [ -d ".git" ]; then
@@ -193,12 +208,17 @@ else
     echo
     echo "Common issues:"
     echo "1. AWS credentials not configured"
-    echo "   - Run: aws configure"
+    echo "   - Run: aws sts get-caller-identity --region $REGION"
+    echo "   - Configure: aws configure"
     echo
     echo "2. No permissions to push to CodeCommit"
     echo "   - Ensure your IAM user/role has codecommit:GitPush permission"
     echo
-    echo "3. Git credential helper not configured"
+    echo "3. Using IAM roles without IAM user?"
+    echo "   - Install git-remote-codecommit: pip install git-remote-codecommit"
+    echo "   - Then run this script again"
+    echo
+    echo "4. Git credential helper not configured (HTTPS method)"
     echo "   - Run: git config --global credential.helper '!aws codecommit credential-helper \$@'"
     echo "   - Run: git config --global credential.UseHttpPath true"
     echo "=========================================="
