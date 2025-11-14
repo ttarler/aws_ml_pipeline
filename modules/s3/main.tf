@@ -243,3 +243,49 @@ resource "aws_s3_bucket_public_access_block" "quicksight" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# S3 Bucket Policy for QuickSight access
+resource "aws_s3_bucket_policy" "quicksight" {
+  bucket = aws_s3_bucket.quicksight.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowQuickSightServiceAccess"
+        Effect = "Allow"
+        Principal = {
+          Service = "quicksight.amazonaws.com"
+        }
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "${aws_s3_bucket.quicksight.arn}",
+          "${aws_s3_bucket.quicksight.arn}/*"
+        ]
+      },
+      {
+        Sid    = "AllowQuickSightRoleAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:${var.partition}:iam::${var.account_id}:role/${var.project_name}-quicksight-role"
+        }
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          "${aws_s3_bucket.quicksight.arn}",
+          "${aws_s3_bucket.quicksight.arn}/*"
+        ]
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.quicksight]
+}

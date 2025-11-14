@@ -249,6 +249,14 @@ To debug lifecycle config issues in SageMaker Studio, check the logs in:
 2. Add permissions later via AWS Console or AWS CLI
 3. Or set `quicksight_user_arn` in terraform.tfvars to your QuickSight user ARN (format: `arn:aws:quicksight:region:account-id:user/namespace/username`)
 
+**QuickSight unable to access manifest file**: An S3 bucket policy has been added to grant QuickSight service and the QuickSight IAM role access to read the manifest file and data from the QuickSight S3 bucket. This policy allows:
+- QuickSight service principal to access bucket contents
+- QuickSight IAM role to read objects and list buckets
+If you still get access errors, verify:
+1. The manifest file exists at `s3://<project>-quicksight-<account-id>/manifests/default-manifest.json`
+2. The QuickSight IAM role has been created: `<project>-quicksight-role`
+3. Your QuickSight account subscription is active in the region
+
 **CodeCommit authentication prompts for credentials**: If you don't have an IAM user (using IAM roles, SSO, or federated auth), you'll be prompted for credentials when pushing to CodeCommit. Solutions:
 
 1. **Install git-remote-codecommit** (Recommended for role-based auth):
