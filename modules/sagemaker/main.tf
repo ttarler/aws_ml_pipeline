@@ -139,15 +139,7 @@ resource "aws_sagemaker_domain" "main" {
 
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type               = var.kernel_gateway_instance_type
-        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
-        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
-      }
-
-      # Use custom image for R kernel
-      custom_image {
-        image_name            = aws_sagemaker_image.datascience_r.id
-        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
+        instance_type = var.kernel_gateway_instance_type
       }
     }
 
@@ -175,19 +167,11 @@ resource "aws_sagemaker_domain" "main" {
     }
 
     # Kernel Gateway settings for notebook instances
-    # Uses custom ECR image with R kernel support
+    # Uses default SageMaker Studio images with lifecycle config for R and Spark
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type               = var.kernel_gateway_instance_type
-        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
-        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
-        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
-      }
-
-      # Use custom image for R kernel
-      custom_image {
-        image_name            = aws_sagemaker_image.datascience_r.id
-        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
+        instance_type        = var.kernel_gateway_instance_type
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
 
       lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn]
@@ -209,9 +193,7 @@ resource "aws_sagemaker_domain" "main" {
   )
 
   depends_on = [
-    aws_sagemaker_image_version.datascience_r,
-    aws_sagemaker_image_version.distribution_cpu,
-    aws_sagemaker_app_image_config.datascience_r
+    aws_sagemaker_studio_lifecycle_config.r_and_spark_setup
   ]
 }
 
@@ -379,16 +361,6 @@ resource "aws_sagemaker_image" "datascience_r" {
   ]
 }
 
-# SageMaker Image Version for Data Science R
-resource "aws_sagemaker_image_version" "datascience_r" {
-  image_name = aws_sagemaker_image.datascience_r.id
-  base_image = local.sagemaker_datascience_image_uri
-
-  depends_on = [
-    aws_sagemaker_image.datascience_r
-  ]
-}
-
 # SageMaker App Image Config for Data Science R
 resource "aws_sagemaker_app_image_config" "datascience_r" {
   app_image_config_name = "${var.project_name}-datascience-r-config"
@@ -428,16 +400,6 @@ resource "aws_sagemaker_image" "distribution_cpu" {
 
   depends_on = [
     aws_ecr_repository.sagemaker_distribution_cpu
-  ]
-}
-
-# SageMaker Image Version for CPU Distribution
-resource "aws_sagemaker_image_version" "distribution_cpu" {
-  image_name = aws_sagemaker_image.distribution_cpu.id
-  base_image = local.sagemaker_cpu_image_uri
-
-  depends_on = [
-    aws_sagemaker_image.distribution_cpu
   ]
 }
 
@@ -542,19 +504,11 @@ resource "aws_sagemaker_space" "general_purpose_template" {
     }
 
     # Kernel Gateway settings for R and Spark kernels
-    # Uses custom ECR image with R kernel support
+    # Uses default SageMaker Studio images with lifecycle config for R and Spark
     kernel_gateway_app_settings {
       default_resource_spec {
-        instance_type               = "ml.m5.xlarge"
-        sagemaker_image_arn         = aws_sagemaker_image.datascience_r.arn
-        sagemaker_image_version_arn = aws_sagemaker_image_version.datascience_r.arn
-        lifecycle_config_arn        = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
-      }
-
-      # Use custom image for R kernel
-      custom_image {
-        image_name            = aws_sagemaker_image.datascience_r.id
-        app_image_config_name = aws_sagemaker_app_image_config.datascience_r.app_image_config_name
+        instance_type        = "ml.m5.xlarge"
+        lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.r_and_spark_setup.arn
       }
 
       # Lifecycle config to install R, Spark, and Neptune kernels
