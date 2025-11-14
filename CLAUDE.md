@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Terraform Infrastructure as Code (IaC)** project that deploys a comprehensive machine learning platform on **AWS GovCloud**. The infrastructure includes SageMaker, EMR, ECS, Neptune, QuickSight, and supporting services with private networking, VPC endpoints, and automated security scanning.
+This is a **Terraform Infrastructure as Code (IaC)** project that deploys a comprehensive machine learning platform on **AWS GovCloud**. The infrastructure includes SageMaker, EMR, ECS, Neptune, and supporting services with private networking, VPC endpoints, and automated security scanning.
 
 **Target Environment**: AWS GovCloud (us-gov-west-1 or us-gov-east-1)
 **Terraform Version**: >= 1.5.0
@@ -62,17 +62,16 @@ pip install git-remote-codecommit
 ## Architecture
 
 ### Module Structure
-The infrastructure is organized into 9 independent Terraform modules:
+The infrastructure is organized into 8 independent Terraform modules:
 
 1. **networking** - VPC, subnets, security groups, VPC endpoints, NAT gateway, bastion host
-2. **s3** - 5 S3 buckets (landing zone, SageMaker, EMR logs, ECS artifacts, QuickSight)
+2. **s3** - 4 S3 buckets (landing zone, SageMaker, EMR logs, ECS artifacts)
 3. **iam** - IAM roles and policies for all services
 4. **sagemaker** - SageMaker Domain, user profiles, spaces, lifecycle configs, ECR repos for custom images
 5. **emr** - EMR cluster with spot instances and auto-scaling
 6. **ecs** - ECS cluster with ECR repositories
 7. **neptune** - Neptune graph database cluster (optional)
-8. **quicksight** - QuickSight data sources and folders (optional)
-9. **codecommit** - CodeCommit repository with automated Checkov security scanning
+8. **codecommit** - CodeCommit repository with automated Checkov security scanning
 
 ### Key Architectural Patterns
 

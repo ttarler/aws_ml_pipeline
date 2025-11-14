@@ -37,13 +37,3 @@ output "ecs_artifacts_bucket_arn" {
   description = "ARN of the ECS artifacts S3 bucket"
   value       = aws_s3_bucket.ecs_artifacts.arn
 }
-
-output "quicksight_bucket_id" {
-  description = "ID of the QuickSight S3 bucket"
-  value       = aws_s3_bucket.quicksight.id
-}
-
-output "quicksight_bucket_arn" {
-  description = "ARN of the QuickSight S3 bucket"
-  value       = aws_s3_bucket.quicksight.arn
-}

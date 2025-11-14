@@ -70,7 +70,6 @@ module "s3" {
   project_name = var.project_name
   account_id   = data.aws_caller_identity.current.account_id
   environment  = var.environment
-  partition    = var.aws_partition
 
   tags = var.tags
 }
@@ -86,7 +85,6 @@ module "iam" {
   s3_landing_zone_arn = module.s3.landing_zone_bucket_arn
   s3_sagemaker_arn    = module.s3.sagemaker_bucket_arn
   s3_emr_logs_arn     = module.s3.emr_logs_bucket_arn
-  s3_quicksight_arn   = module.s3.quicksight_bucket_arn
 
   tags = var.tags
 }
@@ -223,21 +221,3 @@ module "codecommit" {
   depends_on = [module.s3]
 }
 
-# QuickSight Module
-module "quicksight" {
-  count  = var.enable_quicksight ? 1 : 0
-  source = "./modules/quicksight"
-
-  project_name              = var.project_name
-  aws_region                = var.aws_region
-  account_id                = data.aws_caller_identity.current.account_id
-  quicksight_bucket_id      = module.s3.quicksight_bucket_id
-  quicksight_bucket_arn     = module.s3.quicksight_bucket_arn
-  quicksight_user_arn       = var.quicksight_user_arn
-  enable_athena_integration = var.quicksight_enable_athena
-  athena_workgroup          = var.quicksight_athena_workgroup
-
-  tags = var.tags
-
-  depends_on = [module.s3, module.iam]
-}

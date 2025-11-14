@@ -14,12 +14,6 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "partition" {
-  description = "AWS partition (aws or aws-us-gov)"
-  type        = string
-  default     = "aws-us-gov"
-}
-
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
