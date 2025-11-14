@@ -198,3 +198,48 @@ resource "aws_s3_bucket_public_access_block" "ecs_artifacts" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# S3 Bucket for QuickSight data and visualizations
+resource "aws_s3_bucket" "quicksight" {
+  bucket        = "${var.project_name}-quicksight-${var.account_id}"
+  force_destroy = true
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${var.project_name}-quicksight"
+      Purpose     = "QuickSight Data and Visualizations"
+      Environment = var.environment
+    }
+  )
+}
+
+# Enable versioning for QuickSight bucket
+resource "aws_s3_bucket_versioning" "quicksight" {
+  bucket = aws_s3_bucket.quicksight.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Enable server-side encryption for QuickSight bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "quicksight" {
+  bucket = aws_s3_bucket.quicksight.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# Block public access for QuickSight bucket
+resource "aws_s3_bucket_public_access_block" "quicksight" {
+  bucket = aws_s3_bucket.quicksight.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}

@@ -42,3 +42,13 @@ output "ecs_task_role_arn" {
   description = "ARN of ECS task role"
   value       = aws_iam_role.ecs_task.arn
 }
+
+output "quicksight_role_arn" {
+  description = "ARN of QuickSight role"
+  value       = aws_iam_role.quicksight.arn
+}
+
+output "quicksight_role_name" {
+  description = "Name of QuickSight role"
+  value       = aws_iam_role.quicksight.name
+}

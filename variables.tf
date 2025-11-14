@@ -355,3 +355,28 @@ variable "account_id" {
   description = "AWS account ID"
   type        = string
 }
+
+# QuickSight Configuration
+variable "enable_quicksight" {
+  description = "Enable QuickSight for data visualization"
+  type        = bool
+  default     = true
+}
+
+variable "quicksight_user_arn" {
+  description = "ARN of the QuickSight user (format: arn:aws:quicksight:region:account-id:user/namespace/username). Leave empty to skip user permissions."
+  type        = string
+  default     = ""
+}
+
+variable "quicksight_enable_athena" {
+  description = "Enable Athena integration for QuickSight"
+  type        = bool
+  default     = false
+}
+
+variable "quicksight_athena_workgroup" {
+  description = "Athena workgroup for QuickSight queries"
+  type        = string
+  default     = "primary"
+}

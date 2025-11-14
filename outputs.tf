@@ -245,3 +245,34 @@ output "next_steps" {
     For more information, see the README.md file.
   EOT
 }
+
+# QuickSight Outputs
+output "quicksight_bucket_id" {
+  description = "ID of the QuickSight S3 bucket"
+  value       = module.s3.quicksight_bucket_id
+}
+
+output "quicksight_bucket_arn" {
+  description = "ARN of the QuickSight S3 bucket"
+  value       = module.s3.quicksight_bucket_arn
+}
+
+output "quicksight_data_path" {
+  description = "S3 path where data should be uploaded for QuickSight visualization"
+  value       = var.enable_quicksight ? module.quicksight[0].data_bucket_path : "QuickSight not enabled"
+}
+
+output "quicksight_s3_datasource_id" {
+  description = "ID of the QuickSight S3 data source (if enabled)"
+  value       = var.enable_quicksight ? module.quicksight[0].s3_data_source_id : null
+}
+
+output "quicksight_folder_id" {
+  description = "ID of the QuickSight folder for dashboards (if enabled)"
+  value       = var.enable_quicksight ? module.quicksight[0].folder_id : null
+}
+
+output "quicksight_role_arn" {
+  description = "ARN of the QuickSight IAM role"
+  value       = module.iam.quicksight_role_arn
+}

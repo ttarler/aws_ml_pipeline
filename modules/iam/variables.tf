@@ -34,6 +34,11 @@ variable "s3_emr_logs_arn" {
   type        = string
 }
 
+variable "s3_quicksight_arn" {
+  description = "ARN of the S3 QuickSight bucket"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
