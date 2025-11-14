@@ -519,12 +519,10 @@ resource "aws_sagemaker_space" "general_purpose_template" {
   tags = merge(
     var.tags,
     {
-      Name         = "${var.project_name}-general-purpose-cpu-space"
-      Type         = "GeneralPurpose"
-      ComputeType  = "CPU"
-      InstanceType = "ml.t3.medium - ml.m5.24xlarge"
-      Kernels      = "Python, R, PySpark, SparkR, Neptune"
-      Description  = "Template for CPU-based workloads with R, Spark, and Neptune kernels"
+      Name        = "${var.project_name}-general-purpose-cpu-space"
+      Type        = "GeneralPurpose"
+      ComputeType = "CPU"
+      Description = "Template for CPU-based workloads with R Spark and Neptune kernels"
     }
   )
 }
