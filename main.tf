@@ -44,21 +44,34 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# KMS Module - Create encryption keys for all services
+module "kms" {
+  source = "./modules/kms"
+
+  project_name = var.project_name
+  aws_region   = var.aws_region
+  account_id   = data.aws_caller_identity.current.account_id
+  partition    = var.aws_partition
+
+  tags = var.tags
+}
+
 # Networking Module
 module "networking" {
   source = "./modules/networking"
 
-  project_name          = var.project_name
-  vpc_cidr              = var.vpc_cidr
-  private_subnet_cidrs  = var.private_subnet_cidrs
-  public_subnet_cidrs   = var.public_subnet_cidrs
-  availability_zones    = slice(data.aws_availability_zones.available.names, 0, max(length(var.private_subnet_cidrs), length(var.public_subnet_cidrs)))
-  aws_region            = var.aws_region
-  enable_bastion        = var.enable_bastion
-  bastion_instance_type = var.bastion_instance_type
-  bastion_key_name      = var.bastion_key_name
-  enable_nat_gateway    = var.enable_nat_gateway
-  custom_dns_servers    = var.custom_dns_servers
+  project_name           = var.project_name
+  vpc_cidr               = var.vpc_cidr
+  private_subnet_cidrs   = var.private_subnet_cidrs
+  public_subnet_cidrs    = var.public_subnet_cidrs
+  availability_zones     = slice(data.aws_availability_zones.available.names, 0, max(length(var.private_subnet_cidrs), length(var.public_subnet_cidrs)))
+  aws_region             = var.aws_region
+  enable_bastion         = var.enable_bastion
+  bastion_instance_type  = var.bastion_instance_type
+  bastion_key_name       = var.bastion_key_name
+  enable_nat_gateway     = var.enable_nat_gateway
+  custom_dns_servers     = var.custom_dns_servers
+  cloudwatch_kms_key_arn = module.kms.cloudwatch_logs_key_arn
 
   tags = var.tags
 }
@@ -70,6 +83,7 @@ module "s3" {
   project_name = var.project_name
   account_id   = data.aws_caller_identity.current.account_id
   environment  = var.environment
+  kms_key_arn  = module.kms.s3_key_arn
 
   tags = var.tags
 }
@@ -111,6 +125,8 @@ module "sagemaker" {
   enable_neptune_kernel           = var.enable_neptune
   neptune_endpoint                = var.enable_neptune ? module.neptune[0].cluster_endpoint : ""
   emr_master_dns                  = var.enable_emr ? module.emr[0].master_public_dns : ""
+  ecr_kms_key_arn                 = module.kms.ecr_key_arn
+  sagemaker_kms_key_arn           = module.kms.sagemaker_key_arn
 
   tags = var.tags
 
@@ -129,6 +145,8 @@ module "neptune" {
   instance_count            = var.neptune_instance_count
   backup_retention_period   = var.neptune_backup_retention_period
   skip_final_snapshot       = var.neptune_skip_final_snapshot
+  kms_key_arn               = module.kms.neptune_key_arn
+  cloudwatch_kms_key_arn    = module.kms.cloudwatch_logs_key_arn
 
   tags = var.tags
 
@@ -173,6 +191,7 @@ module "emr" {
   managed_scaling_min_capacity  = var.emr_managed_scaling_min_capacity
   managed_scaling_max_capacity  = var.emr_managed_scaling_max_capacity
   managed_scaling_max_ondemand  = var.emr_managed_scaling_max_ondemand
+  cloudwatch_kms_key_arn        = module.kms.cloudwatch_logs_key_arn
 
   tags = var.tags
 
@@ -198,6 +217,9 @@ module "ecs" {
   service_desired_count   = var.ecs_service_desired_count
   enable_scheduled_tasks  = var.ecs_enable_scheduled_tasks
   schedule_expression     = var.ecs_schedule_expression
+  cloudwatch_kms_key_arn  = module.kms.cloudwatch_logs_key_arn
+  ecr_kms_key_arn         = module.kms.ecr_key_arn
+  ecs_kms_key_arn         = module.kms.ecs_key_arn
 
   tags = var.tags
 
@@ -208,13 +230,14 @@ module "ecs" {
 module "codecommit" {
   source = "./modules/codecommit"
 
-  project_name         = var.project_name
-  environment          = var.environment
-  aws_region           = var.aws_region
-  aws_partition        = var.aws_partition
-  account_id           = var.account_id
-  artifacts_bucket_arn = module.s3.ecs_artifacts_bucket_arn
-  enable_auto_checkov  = var.codecommit_enable_auto_checkov
+  project_name           = var.project_name
+  environment            = var.environment
+  aws_region             = var.aws_region
+  aws_partition          = var.aws_partition
+  account_id             = var.account_id
+  artifacts_bucket_arn   = module.s3.ecs_artifacts_bucket_arn
+  enable_auto_checkov    = var.codecommit_enable_auto_checkov
+  cloudwatch_kms_key_arn = module.kms.cloudwatch_logs_key_arn
 
   tags = var.tags
 

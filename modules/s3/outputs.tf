@@ -1,3 +1,13 @@
+output "access_logs_bucket_id" {
+  description = "ID of the access logs S3 bucket"
+  value       = aws_s3_bucket.access_logs.id
+}
+
+output "access_logs_bucket_arn" {
+  description = "ARN of the access logs S3 bucket"
+  value       = aws_s3_bucket.access_logs.arn
+}
+
 output "landing_zone_bucket_id" {
   description = "ID of the landing zone S3 bucket"
   value       = aws_s3_bucket.landing_zone.id

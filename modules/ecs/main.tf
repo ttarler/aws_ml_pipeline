@@ -12,7 +12,8 @@ resource "aws_ecs_cluster" "main" {
       logging = "OVERRIDE"
 
       log_configuration {
-        cloud_watch_log_group_name = aws_cloudwatch_log_group.ecs.name
+        cloud_watch_encryption_enabled = var.ecs_kms_key_arn != "" ? true : false
+        cloud_watch_log_group_name     = aws_cloudwatch_log_group.ecs.name
       }
     }
   }
@@ -41,7 +42,8 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 # CloudWatch Log Group for ECS
 resource "aws_cloudwatch_log_group" "ecs" {
   name              = "/aws/ecs/${var.project_name}"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
 
   tags = merge(
     var.tags,
@@ -61,10 +63,11 @@ resource "aws_ecr_repository" "main" {
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = var.ecr_kms_key_arn != "" ? "KMS" : "AES256"
+    kms_key         = var.ecr_kms_key_arn != "" ? var.ecr_kms_key_arn : null
   }
 
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
 
   tags = merge(
     var.tags,

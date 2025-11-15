@@ -8,14 +8,15 @@ data "aws_caller_identity" "current" {}
 # These will store copies of public SageMaker images for use in the domain
 resource "aws_ecr_repository" "sagemaker_datascience" {
   name                 = "${var.project_name}/sagemaker-datascience-r"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = var.ecr_kms_key_arn != "" ? "KMS" : "AES256"
+    kms_key         = var.ecr_kms_key_arn != "" ? var.ecr_kms_key_arn : null
   }
 
   tags = merge(
@@ -30,14 +31,15 @@ resource "aws_ecr_repository" "sagemaker_datascience" {
 
 resource "aws_ecr_repository" "sagemaker_distribution_cpu" {
   name                 = "${var.project_name}/sagemaker-distribution-cpu"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
 
   image_scanning_configuration {
     scan_on_push = true
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = var.ecr_kms_key_arn != "" ? "KMS" : "AES256"
+    kms_key         = var.ecr_kms_key_arn != "" ? var.ecr_kms_key_arn : null
   }
 
   tags = merge(
@@ -187,6 +189,8 @@ resource "aws_sagemaker_domain" "main" {
       }
     }
   }
+
+  kms_key_id = var.sagemaker_kms_key_arn != "" ? var.sagemaker_kms_key_arn : null
 
   tags = merge(
     var.tags,
@@ -453,6 +457,12 @@ resource "aws_sagemaker_notebook_instance" "emr_connector" {
   security_groups        = [var.security_group_id]
   direct_internet_access = var.notebook_direct_internet_access
   volume_size            = 50
+  kms_key_id             = var.sagemaker_kms_key_arn != "" ? var.sagemaker_kms_key_arn : null
+  root_access            = "Disabled"
+
+  instance_metadata_service_configuration {
+    minimum_instance_metadata_service_version = "2"
+  }
 
   # Lifecycle config disabled to prevent timeout issues in private subnets
   # The lifecycle script requires internet access to install packages

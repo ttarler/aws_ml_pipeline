@@ -136,7 +136,8 @@ resource "aws_codebuild_project" "checkov" {
 # CloudWatch Log Group for CodeBuild
 resource "aws_cloudwatch_log_group" "codebuild_checkov" {
   name              = "/aws/codebuild/${var.project_name}-checkov"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
 
   tags = merge(
     var.tags,

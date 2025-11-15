@@ -75,7 +75,9 @@ resource "aws_neptune_cluster" "main" {
   iam_database_authentication_enabled = var.iam_database_authentication_enabled
   apply_immediately                   = var.apply_immediately
   storage_encrypted                   = true
-  kms_key_arn                         = var.kms_key_arn
+  kms_key_arn                         = var.kms_key_arn != "" ? var.kms_key_arn : null
+  deletion_protection                 = true
+  copy_tags_to_snapshot               = true
 
   neptune_subnet_group_name            = aws_neptune_subnet_group.main.name
   neptune_cluster_parameter_group_name = aws_neptune_cluster_parameter_group.main.name
@@ -122,6 +124,7 @@ resource "aws_cloudwatch_log_group" "neptune_audit" {
   count             = var.enable_cloudwatch_logs ? 1 : 0
   name              = "/aws/neptune/${var.project_name}/audit"
   retention_in_days = var.log_retention_days
+  kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
 
   tags = merge(
     var.tags,

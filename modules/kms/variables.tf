@@ -3,21 +3,20 @@ variable "project_name" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}
+
 variable "account_id" {
   description = "AWS account ID"
   type        = string
 }
 
-variable "environment" {
-  description = "Environment name (e.g., dev, staging, prod)"
+variable "partition" {
+  description = "AWS partition (aws or aws-us-gov)"
   type        = string
-  default     = "dev"
-}
-
-variable "kms_key_arn" {
-  description = "ARN of KMS key for S3 bucket encryption"
-  type        = string
-  default     = ""
+  default     = "aws-us-gov"
 }
 
 variable "tags" {

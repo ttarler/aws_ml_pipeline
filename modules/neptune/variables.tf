@@ -94,11 +94,17 @@ variable "enable_cloudwatch_logs" {
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "kms_key_arn" {
-  description = "KMS key ARN for encryption (optional)"
+  description = "KMS key ARN for Neptune cluster encryption (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "cloudwatch_kms_key_arn" {
+  description = "ARN of KMS key for CloudWatch Logs encryption"
   type        = string
   default     = ""
 }

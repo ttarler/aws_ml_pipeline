@@ -18,6 +18,84 @@ resource "aws_vpc" "main" {
   }
 }
 
+# CloudWatch Log Group for VPC Flow Logs
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc/${var.project_name}"
+  retention_in_days = 365
+  kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-vpc-flow-logs"
+    }
+  )
+}
+
+# IAM Role for VPC Flow Logs
+resource "aws_iam_role" "vpc_flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-vpc-flow-logs-role"
+    }
+  )
+}
+
+# IAM Policy for VPC Flow Logs
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-policy"
+  role = aws_iam_role.vpc_flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# VPC Flow Logs
+resource "aws_flow_log" "main" {
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  log_destination_type = "cloud-watch-logs"
+  traffic_type         = "ALL"
+  vpc_id               = aws_vpc.main.id
+  iam_role_arn         = aws_iam_role.vpc_flow_logs.arn
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-vpc-flow-log"
+    }
+  )
+}
+
 # VPC DHCP Options (Custom DNS servers)
 resource "aws_vpc_dhcp_options" "main" {
   count               = length(var.custom_dns_servers) > 0 ? 1 : 0

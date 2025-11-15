@@ -204,7 +204,8 @@ resource "aws_emr_instance_group" "task_spot" {
 # CloudWatch Log Group for EMR
 resource "aws_cloudwatch_log_group" "emr" {
   name              = "/aws/emr/${var.project_name}"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = var.cloudwatch_kms_key_arn != "" ? var.cloudwatch_kms_key_arn : null
 
   tags = merge(
     var.tags,

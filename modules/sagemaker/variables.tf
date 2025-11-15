@@ -102,6 +102,18 @@ variable "emr_master_dns" {
   default     = ""
 }
 
+variable "ecr_kms_key_arn" {
+  description = "ARN of KMS key for ECR encryption"
+  type        = string
+  default     = ""
+}
+
+variable "sagemaker_kms_key_arn" {
+  description = "ARN of KMS key for SageMaker encryption"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

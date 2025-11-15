@@ -35,6 +35,12 @@ variable "enable_auto_checkov" {
   default     = true
 }
 
+variable "cloudwatch_kms_key_arn" {
+  description = "ARN of KMS key for CloudWatch Logs encryption"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)

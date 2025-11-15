@@ -93,6 +93,24 @@ variable "events_role_arn" {
   default     = ""
 }
 
+variable "cloudwatch_kms_key_arn" {
+  description = "ARN of KMS key for CloudWatch Logs encryption"
+  type        = string
+  default     = ""
+}
+
+variable "ecr_kms_key_arn" {
+  description = "ARN of KMS key for ECR encryption"
+  type        = string
+  default     = ""
+}
+
+variable "ecs_kms_key_arn" {
+  description = "ARN of KMS key for ECS cluster encryption"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
